@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conor Egan | Product Design Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .section-padding {
+            padding: 8rem 1rem;
+        }
+        @media (min-width: 768px) {
+            .section-padding {
+                padding: 8rem 2rem;
+            }
+        }
+        .case-study-grid {
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 1024px) {
+            .case-study-grid {
+                grid-template-columns: 300px 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white/80 backdrop-blur-lg fixed top-0 left-0 right-0 z-10 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0">
+                    <a href="#hero" class="text-lg font-bold text-gray-900">Conor Egan</a>
+                </div>
+                <nav class="hidden md:flex md:space-x-8">
+                    <a href="#projects" class="text-gray-600 hover:text-gray-900 transition">Projects</a>
+                    <a href="#contact" class="text-gray-600 hover:text-gray-900 transition">Contact</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="hero" class="min-h-screen flex items-center bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="max-w-3xl mx-auto">
+                <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight">Product Design Portfolio</h1>
+                <p class="mt-6 text-lg md:text-xl text-gray-600">
+                    An engineering student passionate about creating intuitive tools for technical users.
+                </p>
+                <div class="mt-8 flex justify-center space-x-4">
+                     <a href="mailto:conoregan.london@gmail.com" class="bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition shadow-md">Get in Touch</a>
+                     <a href="#projects" class="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-md border border-gray-300">View Projects</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Introduction Section -->
+    <section id="intro" class="section-padding bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 items-center">
+                <div class="md:col-span-1">
+                    <img src="https://placehold.co/500x500/e2e8f0/333333?text=Your+Photo" alt="Conor Egan" class="rounded-lg shadow-xl w-full">
+                </div>
+                <div class="md:col-span-2">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Hello! I'm Conor.</h2>
+                    <p class="text-lg text-gray-600 space-y-4">
+                        <span>I'm a final-year MEng Engineering Design student at the University of Bristol.</span>
+                        <br><br>
+                        <span>My passion lies at the intersection of complex engineering and user-centric design. I enjoy diving into technical challenges to understand user pain points, then building software tools that make their work more intuitive and efficient. This portfolio showcases two projects where I have applied this approach.</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="section-padding bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-extrabold text-gray-900">My Work</h2>
+                <p class="mt-4 text-lg text-gray-600">A selection of projects that showcase my design process.</p>
+            </div>
+
+            <!-- Project 1: EAV Health Monitoring System -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-16 p-8 md:p-12">
+                <div class="mb-8">
+                    <h3 class="text-3xl font-bold text-gray-900">Project 1: EAV Health Monitoring System</h3>
+                    <p class="mt-2 text-xl text-gray-600">A Predictive Dashboard for EV Fleet Managers</p>
+                </div>
+
+                <div class="space-y-12">
+                    <!-- The Problem & User -->
+                    <div>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge</h4>
+                        <p class="text-gray-700">Fleet managers of commercial Electric-Assisted Vehicles (EAVs) have no easy way to monitor the long-term health of their vehicle batteries. This leads to unexpected failures, costly downtime, and inefficient maintenance scheduling. They need a tool that can predict battery degradation before it becomes a critical issue.</p>
+                    </div>
+
+                    <!-- The Design Process -->
+                    <div>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">My Design Process</h4>
+                        <p class="text-gray-700 mb-6">I started with low-fidelity sketches to explore layouts, focusing on a clear visual hierarchy for a non-technical user. This evolved into digital wireframes to solidify the structure before visual design.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <figure>
+                                <img src="https://placehold.co/600x400/e2e8f0/333333?text=Sketch+of+UI" alt="Sketch of UI" class="rounded-lg shadow-md w-full">
+                                <figcaption class="text-center mt-2 text-sm text-gray-500">Initial sketches exploring dashboard concepts.</figcaption>
+                            </figure>
+                            <figure>
+                                <img src="https://placehold.co/600x400/e2e8f0/333333?text=Wireframe+of+UI" alt="Wireframe of UI" class="rounded-lg shadow-md w-full">
+                                <figcaption class="text-center mt-2 text-sm text-gray-500">Main dashboard wireframe establishing key modules.</figcaption>
+                            </figure>
+                        </div>
+                    </div>
+
+                    <!-- The Solution -->
+                    <div>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Proposed Solution</h4>
+                        <p class="text-gray-700 mb-6">The proposed solution is a clean, intuitive dashboard that provides a predictive "State of Health" (SoH) score for each vehicle in the fleet, allowing managers to quickly identify at-risk vehicles and schedule maintenance proactively.</p>
+                        <div class="bg-gray-100 p-4 rounded-lg shadow-inner">
+                            <img src="https://placehold.co/1200x750/333333/ffffff?text=High-Fidelity+Dashboard+Mockup" alt="High-fidelity mockup of the EAV Health Dashboard" class="rounded-lg shadow-lg w-full">
+                        </div>
+                         <p class="text-gray-700 mt-6 font-semibold">Key Design Decisions:</p>
+                         <ul class="list-disc list-inside text-gray-700 mt-2 space-y-2">
+                            <li><span class="font-semibold">Prioritised "At-a-Glance" Info:</span> The main SoH score is the largest element, using colour-coding (green, yellow, red) so the manager can assess fleet health in seconds.</li>
+                            <li><span class="font-semibold">Action-Oriented List:</span> The vehicle list is sorted by the most critical batteries first, telling the user exactly where to focus their attention.</li>
+                            <li><span class="font-semibold">Clear Data Visualisation:</span> The "Health Over Time" graph helps the user spot trends in battery degradation, turning complex data into a simple visual story.</li>
+                         </ul>
+                    </div>
+                     <!-- The Technical Implementation -->
+                    <div>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Technical Implementation</h4>
+                        <p class="text-gray-700 mb-6">The core of the system is a Python script that analyses raw battery data to generate the health score. The logic is clearly commented to be understood by other developers.</p>
+                        <div class="bg-gray-900 rounded-lg p-6 text-sm text-white font-mono shadow-md">
+                            <pre><code># This function takes in raw sensor readings and calculates a weighted SoH score.
+def calculate_state_of_health(voltage_readings, temp_readings):
+    # Normalize readings
+    norm_voltage = normalize(voltage_readings)
+    norm_temp = normalize(temp_readings)
+
+    # Apply weighting (example weights)
+    voltage_weight = 0.6
+    temp_weight = 0.4
+    
+    health_score = (norm_voltage * voltage_weight) + (norm_temp * temp_weight)
+    
+    return round(health_score * 100, 2)</code></pre>
+                        </div>
+                        <p class="text-gray-700 mt-6"><span class="font-semibold">Next Steps:</span> Currently, the data analysis module is complete. The next step is to build a functional prototype by connecting this Python backend to a web framework like Flask or Django to serve the dashboard interface.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project 2: Airborne UK -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden p-8 md:p-12">
+                 <div class="mb-8">
+                    <h3 class="text-3xl font-bold text-gray-900">Project 2: Designing for Engineers at Airborne UK</h3>
+                    <p class="mt-2 text-xl text-gray-600">Improving Workflows with User-Focused Internal Tools</p>
+                </div>
+                <div class="space-y-12">
+                     <div>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge</h4>
+                        <p class="text-gray-700 mb-6">During my year in industry, I was tasked with improving the efficiency of the engineering and quality control teams. I identified two key areas where manual processes were causing delays: factory monitoring and component inspection. As the work was proprietary, all visuals shown are recreated wireframes.</p>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <!-- Solution 1 -->
+                        <div>
+                             <h5 class="text-xl font-semibold text-gray-900 mb-2">Solution 1: The Monitoring Dashboard</h5>
+                             <p class="text-gray-700 mb-4"><span class="font-semibold">Problem:</span> Engineers had no centralised way to monitor factory conditions, forcing them to react to issues.</p>
+                             <p class="text-gray-700 mb-4"><span class="font-semibold">Solution:</span> I designed and built a real-time dashboard to give engineers an at-a-glance view of all critical systems.</p>
+                             <figure>
+                                <img src="https://placehold.co/600x400/e2e8f0/333333?text=Recreated+Dashboard+Wireframe" alt="Recreated wireframe of the monitoring dashboard" class="rounded-lg shadow-md w-full">
+                                <figcaption class="text-center mt-2 text-sm text-gray-500">Recreated wireframe of the dashboard's user interface.</figcaption>
+                            </figure>
+                             <p class="text-gray-700 mt-4"><span class="font-semibold">Impact:</span> This tool moved the team from a reactive to a proactive workflow, saving valuable diagnostic time.</p>
+                        </div>
+                        <!-- Solution 2 -->
+                         <div>
+                             <h5 class="text-xl font-semibold text-gray-900 mb-2">Solution 2: The Computer Vision Tool</h5>
+                             <p class="text-gray-700 mb-4"><span class="font-semibold">Problem:</span> The manual quality control process for composite parts was slow and prone to human error.</p>
+                             <p class="text-gray-700 mb-4"><span class="font-semibold">Solution:</span> I developed a simple computer vision tool that allowed QC technicians to perform inspections with greater accuracy and speed.</p>
+                             <figure>
+                                <img src="https://placehold.co/600x400/e2e8f0/333333?text=Recreated+QC+Tool+Wireframe" alt="Recreated wireframe of the QC tool" class="rounded-lg shadow-md w-full">
+                                <figcaption class="text-center mt-2 text-sm text-gray-500">Recreated wireframe showing the simple, task-focused UI.</figcaption>
+                            </figure>
+                             <p class="text-gray-700 mt-4"><span class="font-semibold">Impact:</span> The tool improved the reliability and efficiency of the quality control process.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <footer id="contact" class="bg-gray-900 text-white section-padding">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold">Thank You</h2>
+            <p class="mt-4 text-lg text-gray-300 max-w-2xl mx-auto">
+                Thank you for taking the time to review my work. I am passionate about using my engineering background to design and build better tools. I would be thrilled to discuss how I could contribute to the team at Palantir.
+            </p>
+             <div class="mt-8 flex justify-center space-x-6">
+                <a href="mailto:conoregan.london@gmail.com" class="text-gray-300 hover:text-white transition">conoregan.london@gmail.com</a>
+                <span>&middot;</span>
+                <a href="[Link to your LinkedIn profile]" target="_blank" class="text-gray-300 hover:text-white transition">LinkedIn</a>
+            </div>
+            <div class="mt-8 text-sm text-gray-500">
+                <p>&copy; 2025 Conor Egan. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
