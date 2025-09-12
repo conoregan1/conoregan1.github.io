@@ -21,6 +21,15 @@
                 padding: 8rem 2rem;
             }
         }
+        /* For styling the code block */
+        pre {
+            background-color: #1f2937; /* gray-800 */
+            color: #d1d5db; /* gray-300 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased">
@@ -92,50 +101,87 @@
                 </div>
 
                 <div class="space-y-12">
-                    <!-- The Problem & User -->
+                    <!-- The Challenge -->
                     <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge</h4>
-                        <p class="text-gray-700">Fleet managers of commercial Electric-Assisted Vehicles (EAVs) lack the tools to monitor vehicle performance, driver behaviour, and long-term system health. This leads to inefficient operations, unexpected maintenance, and an inability to accurately assess key metrics like payload and vehicle safety in the field.</p>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge & Academic Context</h4>
+                        <p class="text-gray-700 mb-4">As part of my MEng in Engineering Design, this was my major individual research project, conducted in collaboration with EAV Ltd. The company aims to upgrade its e-cargo bike into a people-carrying e-bike taxi. To do this, they required a high-quality system to monitor vehicle health, track performance, and ensure passenger safety. My individual work forms a key part of the foundation for my upcoming final-year group design project, where a team of seven of us will deliver a complete design for the new vehicle.</p>
+                        <p class="text-gray-700">The core challenge was to design a cost-effective system that could provide fleet managers with actionable insights into vehicle performance, payload, and safety without requiring expensive new mechanical components.</p>
                     </div>
 
                     <!-- The Solution -->
                     <div>
                         <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">My Solution: A Full-Stack Approach</h4>
-                         <p class="text-gray-700 mb-6">To solve this, I designed and developed a complete end-to-end system. This wasn't just a piece of software, but a full stack solution involving a custom-built hardware data logger and a suite of Python-based analysis tools.</p>
-                        <figure class="mb-6 max-w-lg mx-auto">
+                         <p class="text-gray-700 mb-6">I designed and developed a complete end-to-end system, covering the full stack from custom hardware and embedded firmware to a suite of Python-based analysis tools.</p>
+                        <figure class="mb-6 max-w-2xl mx-auto">
                            <img src="images/eav-hardware-setup.png" alt="The custom-built hardware data logger for the EAV project" class="rounded-lg shadow-md w-full">
                            <figcaption class="text-center mt-2 text-sm text-gray-500">The custom-built hardware data logger, combining an ESP32, GPS, and MPU6050 IMU on a breadboard for prototyping.</figcaption>
                        </figure>
                         <ul class="list-disc list-inside text-gray-700 mt-4 space-y-2 mb-6">
-                            <li>Embedded C++ firmware with Kalman filtering for accurate real-time orientation tracking and robust data logging to an SD card.</li>
-                            <li>A suite of Python-based analysis tools to process the raw data, providing actionable insights for fleet managers.</li>
+                            <li>**Embedded C++ Firmware:** I developed robust firmware for the ESP32 microcontroller that performs on-board sensor fusion using a Kalman filter for accurate orientation tracking and logs all data reliably to an SD card.</li>
+                            <li>**Python Analysis Suite:** I wrote a collection of Python scripts to automatically parse, process, and analyse the raw data, providing valuable insights for fleet managers.</li>
                         </ul>
                     </div>
 
-                    <!-- The Technical Implementation -->
+                    <!-- Key Features & Technical Implementation -->
                     <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Key Features & Technical Implementation</h4>
-                        <p class="text-gray-700 mb-6">The system transforms raw sensor data into high-level insights. Below is a plot showing the successful results of the mass estimation model, which achieved a 6-7% margin of error against real-world test data.</p>
-                        <figure class="mb-6 max-w-2xl mx-auto">
-                           <img src="images/eav-mass-estimation-results.png" alt="Graph showing the results of the mass estimation algorithm against actual test weights" class="rounded-lg shadow-md w-full">
-                           <figcaption class="text-center mt-2 text-sm text-gray-500">Validation results for the mass estimation algorithm, comparing calculated results (grey bars) against actual vehicle weight (yellow bars) for different cargo loads.</figcaption>
-                       </figure>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Core Analytical Features</h4>
+                        <p class="text-gray-700 mb-8">The system transforms raw sensor data into high-level insights. The two flagship features of the analysis suite are a mass estimation model and a crash detection algorithm, both designed to give fleet managers crucial data without requiring additional mechanical sensors.</p>
                         
-                         <p class="text-gray-700 mt-6 font-semibold">Additional System Capabilities:</p>
-                         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                            <div>
-                                <h5 class="text-lg font-bold text-gray-800">Crash Detection & Safety Analysis</h5>
-                                <p class="text-gray-700 mt-2">The system processes normalised accelerometer data to automatically log and classify impacts as 'small' or 'large' events, providing critical data for safety analysis and preventative maintenance.</p>
-                                <h5 class="text-lg font-bold text-gray-800 mt-4">GPS Path Visualisation</h5>
-                                <p class="text-gray-700 mt-2">A tool that ingests the logged GPS data and plots the vehicle's route, colour-coded by time, allowing for trip analysis and driver monitoring.</p>
-                                <h5 class="text-lg font-bold text-gray-800 mt-4">Robust Hardware & Firmware</h5>
-                                <p class="text-gray-700 mt-2">The physical data logger includes features like Wi-Fi reconnection logic and IFTTT notifications for critical system events like GPS signal loss or SD card failure, ensuring data integrity.</p>
-                            </div>
-                            <figure>
+                        <!-- Feature 1: Mass Estimation -->
+                        <div class="mb-12">
+                            <h5 class="text-xl font-bold text-gray-800">Feature 1: Mass Estimation for Payload Monitoring</h5>
+                            <p class="text-gray-700 mt-2 mb-6">This model calculates the total vehicle payload with a 6-7% margin of error, validated against real-world test data. This allows EAV to monitor how the vehicle is being used and optimise battery performance based on load, a critical factor for operational efficiency.</p>
+                            <figure class="max-w-2xl mx-auto">
+                               <img src="images/eav-mass-estimation-results.png" alt="Graph showing the results of the mass estimation algorithm against actual test weights" class="rounded-lg shadow-md w-full">
+                               <figcaption class="text-center mt-2 text-sm text-gray-500">Validation results for the mass estimation algorithm, comparing calculated results (grey bars) against actual vehicle weight (yellow bars) for different cargo loads.</figcaption>
+                           </figure>
+                        </div>
+                        
+                        <!-- Feature 2: Crash Detection -->
+                        <div>
+                             <h5 class="text-xl font-bold text-gray-800">Feature 2: Crash Detection for Safety & Maintenance</h5>
+                            <p class="text-gray-700 mt-2 mb-6">By processing normalised accelerometer data, the system automatically logs and classifies impacts as 'small' or 'large' events. This provides critical data for safety analysis and allows fleet managers to proactively flag vehicles that may require inspection after a significant impact, preventing minor issues from becoming major failures.</p>
+                             <figure class="max-w-2xl mx-auto">
                                <img src="images/eav-crash-detection-results.png" alt="Graph showing the crash detection algorithm identifying simulated impacts" class="rounded-lg shadow-md w-full">
                                <figcaption class="text-center mt-2 text-sm text-gray-500">The crash detection algorithm successfully identifying and classifying a series of simulated impacts of increasing force.</figcaption>
                            </figure>
-                         </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Code Snippet -->
+                    <div>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 mt-12 border-l-4 border-gray-900 pl-4">Behind the Analysis: A Code Snippet</h4>
+                        <p class="text-gray-700 mb-4">A critical step in the analysis is normalising the accelerometer data to remove the effects of gravity, which requires transforming the gravity vector into the sensor's local reference frame using 3D rotation matrices. This Python function demonstrates how that was achieved.</p>
+                        <pre><code>def normalize_acceleration(df):
+    roll = np.radians(df['Roll'].values)
+    pitch = np.radians(df['Pitch'].values)
+    yaw = np.radians(df['Yaw'].values)
+    
+    # Global gravity vector
+    gravity_global = np.array([0, 0, 9.81])
+    
+    # Prepare arrays for normalized values
+    accel_normalized_vectors = np.zeros((len(roll), 3))
+
+    for i in range(len(roll)):
+        # Create rotation matrices for each axis
+        R_x = np.array([[1, 0, 0], [0, np.cos(roll[i]), -np.sin(roll[i])], [0, np.sin(roll[i]), np.cos(roll[i])]])
+        R_y = np.array([[np.cos(pitch[i]), 0, np.sin(pitch[i])], [0, 1, 0], [-np.sin(pitch[i]), 0, np.cos(pitch[i])]])
+        R_z = np.array([[np.cos(yaw[i]), -np.sin(yaw[i]), 0], [np.sin(yaw[i]), np.cos(yaw[i]), 0], [0, 0, 1]])
+        
+        # Combined rotation matrix
+        R = R_z @ R_y @ R_x
+        
+        # Transform global gravity to sensor's local frame
+        gravity_local = R.T @ gravity_global
+        
+        # Get raw acceleration and subtract local gravity
+        accel_local = np.array([df['x-axis'].iloc[i], df['y-axis'].iloc[i], df['z-axis'].iloc[i]])
+        accel_normalized = accel_local - gravity_local
+        accel_normalized_vectors[i] = accel_normalized
+
+    df[['x-axis_norm', 'y-axis_norm', 'z-axis_norm']] = accel_normalized_vectors
+    return df</code></pre>
                     </div>
                 </div>
             </div>
@@ -164,7 +210,7 @@
                        
                        <p class="text-gray-700 font-semibold">Process Rigour - Hardware Validation:</p>
                        <p class="text-gray-700 my-2">To ensure the data was trustworthy, I designed and 3D printed custom jigs in SolidWorks to systematically test and validate the roll, pitch, yaw, and acceleration data from the IMU sensors. This process of rigorous validation was crucial for gaining the engineering team's confidence in the tool.</p>
-                        <figure class="mb-6 max-w-lg mx-auto">
+                        <figure class="mb-6 max-w-sm mx-auto">
                            <img src="images/airborne-jig.png" alt="3D printed jig used to validate sensor data" class="rounded-lg shadow-md w-full">
                            <figcaption class="text-center mt-2 text-sm text-gray-500">One of the custom jigs designed in SolidWorks and 3D printed to validate IMU sensor accuracy.</figcaption>
                        </figure>
@@ -200,7 +246,7 @@
                     I'm driven by a curiosity for how things work, which is what led me to engineering. I enjoy the process of breaking down a complex problem into its core components and building a solution from the ground up, whether that's a piece of hardware or a software tool.
                 </p>
                 <p>
-                    Outside of my studies, my leadership and teamwork skills have been developed through my commitment to university water polo. I served as the 2nd Team Captain for the 2022-2023 season, and I am currently the Alumni and Sponsorship Secretary for 2024-2025, roles which require strong communication, organisation, and dedication.
+                    Outside of academia, I've honed my leadership and teamwork skills through a long-standing commitment to university water polo. I have held several committee positions, including 2nd Team Captain in the 2022-2023 season and Alumni and Sponsorship Secretary for the 2024-2025 season. These roles have been invaluable for developing my skills in communication, organisation, and project management.
                 </p>
             </div>
         </div>
