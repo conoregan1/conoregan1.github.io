@@ -166,44 +166,65 @@
 
             <!-- Project 2: Airborne UK -->
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden p-8 md:p-12">
-                 <div class="mb-8">
-                    <h3 class="text-3xl font-bold text-gray-900">Project 2: Designing for Engineers at Airborne UK</h3>
-                    <p class="mt-2 text-xl text-gray-600">Improving Workflows with User-Focused Internal Tools</p>
-                </div>
-                <div class="space-y-12">
-                     <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge</h4>
-                        <p class="text-gray-700 mb-6">During my year in industry, I was tasked with improving the efficiency of the engineering and quality control teams. I identified two key areas where manual processes were causing delays: factory monitoring and component inspection. As the work was proprietary, all visuals shown are recreated wireframes.</p>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                        <!-- Solution 1 -->
-                        <div>
-                             <h5 class="text-xl font-semibold text-gray-900 mb-2">Solution 1: The Monitoring Dashboard</h5>
-                             <p class="text-gray-700 mb-4"><span class="font-semibold">Problem:</span> Engineers had no centralised way to monitor factory conditions, forcing them to react to issues.</p>
-                             <p class="text-gray-700 mb-4"><span class="font-semibold">Solution:</span> I designed and built a real-time dashboard to give engineers an at-a-glance view of all critical systems.</p>
-                             <figure>
-                                <img src="https://placehold.co/600x400/e2e8f0/333333?text=Recreated+Dashboard+Wireframe" alt="Recreated wireframe of the monitoring dashboard" class="rounded-lg shadow-md w-full">
-                                <figcaption class="text-center mt-2 text-sm text-gray-500">Recreated wireframe of the dashboard's user interface.</figcaption>
-                            </figure>
-                             <p class="text-gray-700 mt-4"><span class="font-semibold">Impact:</span> This tool moved the team from a reactive to a proactive workflow, saving valuable diagnostic time.</p>
-                        </div>
-                        <!-- Solution 2 -->
-                         <div>
-                             <h5 class="text-xl font-semibold text-gray-900 mb-2">Solution 2: The Computer Vision Tool</h5>
-                             <p class="text-gray-700 mb-4"><span class="font-semibold">Problem:</span> The manual quality control process for composite parts was slow and prone to human error.</p>
-                             <p class="text-gray-700 mb-4"><span class="font-semibold">Solution:</span> I developed a simple computer vision tool that allowed QC technicians to perform inspections with greater accuracy and speed.</p>
-                             <figure>
-                                <img src="https://placehold.co/600x400/e2e8f0/333333?text=Recreated+QC+Tool+Wireframe" alt="Recreated wireframe of the QC tool" class="rounded-lg shadow-md w-full">
-                                <figcaption class="text-center mt-2 text-sm text-gray-500">Recreated wireframe showing the simple, task-focused UI.</figcaption>
-                            </figure>
-                             <p class="text-gray-700 mt-4"><span class="font-semibold">Impact:</span> The tool improved the reliability and efficiency of the quality control process.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <div class="mb-8">
+                   <h3 class="text-3xl font-bold text-gray-900">Project 2: Designing for Engineers at Airborne UK</h3>
+                   <p class="mt-2 text-xl text-gray-600">Improving Workflows with User-Focused Internal Tools</p>
+               </div>
+               <div class="space-y-12">
+                    <div>
+                       <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge</h4>
+                       <p class="text-gray-700 mb-6">During my year in industry, I inherited two early-stage internal projects: a basic script for quality control and another for environmental monitoring. I was tasked with transforming them into robust, user-friendly tools that would improve the efficiency of the engineering and quality control teams. As the work was proprietary, all visuals shown are recreated wireframes and diagrams.</p>
+                   </div>
+                   
+                   <!-- Solution 1: Monitoring Dashboard -->
+                   <div>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Solution 1: The Real-Time Monitoring Dashboard</h4>
+                        <p class="text-gray-700 mb-2"><span class="font-semibold">Problem:</span> Engineers had no centralised way to monitor factory conditions, forcing them to react to issues rather than prevent them.</p>
+                        <p class="text-gray-700 mb-6"><span class="font-semibold">Solution:</span> I designed and built a real-time dashboard to give engineers an at-a-glance view of 12 critical data types, from temperature and humidity to machine vibration.</p>
+                        <figure class="mb-6">
+                           <img src="https://placehold.co/1200x600/e2e8f0/333333?text=Recreated+Dashboard+Wireframe" alt="Recreated wireframe of the monitoring dashboard" class="rounded-lg shadow-md w-full">
+                           <figcaption class="text-center mt-2 text-sm text-gray-500">A recreated wireframe of the dashboard's UI, designed for clarity and rapid assessment.</figcaption>
+                       </figure>
+                       
+                       <p class="text-gray-700 font-semibold">Key Design Feature - Dynamic Threshold Alerts:</p>
+                       <p class="text-gray-700 my-2">The most important user requirement was to be alerted to problems instantly. To achieve this, I implemented a feature where the line on each graph automatically changes from green to red if the data passes a user-set threshold. This simple visual cue transformed the dashboard from a passive data display into an active monitoring tool, allowing engineers to spot issues immediately.</p>
+
+                       <p class="text-gray-700 font-semibold mt-4">Process Rigour - Hardware Validation:</p>
+                       <p class="text-gray-700 my-2">To ensure the data was trustworthy, I designed and 3D printed custom jigs in SolidWorks to systematically test and validate the roll, pitch, yaw, and acceleration data from the IMU sensors. This process of rigorous validation was crucial for gaining the engineering team's confidence in the tool.</p>
+                   </div>
+
+                   <!-- Solution 2: Computer Vision Tool -->
+                   <div>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Solution 2: The Automated QC Tool</h4>
+                        <p class="text-gray-700 mb-2"><span class="font-semibold">Problem:</span> The manual quality control process for composite parts was slow and prone to human error, creating a bottleneck in the production line.</p>
+                        <p class="text-gray-700 mb-6"><span class="font-semibold">Solution:</span> I developed a computer vision tool that allowed QC technicians to automatically verify part geometry against a defined tolerance.</p>
+                        
+                        <p class="text-gray-700 font-semibold">Key Technical Challenge - Solving Image Distortion:</p>
+                        <p class="text-gray-700 my-2">A major obstacle was that the camera lens warped and distorted the images, making accurate measurement impossible. I researched and implemented a camera calibration routine in Python that mathematically undistorted the images, ensuring the geometric analysis was precise and reliable. This was a critical step that unblocked the entire project.</p>
+
+                        <p class="text-gray-700 font-semibold mt-4">Impact:</p>
+                        <p class="text-gray-700 my-2">These tools significantly improved the workflows for both the engineering and QC teams. I had the opportunity to present the progress and positive impact of these projects at quarterly review meetings to company stakeholders and external funders, which further developed my technical communication skills.</p>
+                   </div>
+               </div>
+           </div>
         </div>
     </section>
 
+    <!-- About Me Section -->
+    <section id="about" class="section-padding bg-white">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">A Little More About Me</h2>
+            <div class="text-lg text-gray-600 space-y-4">
+                <p>
+                    I'm driven by a curiosity for how things work, which is what led me to engineering. I enjoy the process of breaking down a complex problem into its core components and building a solution from the ground up, whether that's a piece of hardware or a software tool.
+                </p>
+                <p>
+                    Outside of my studies, I am the alumni liaison and sponsorship secretary for my university's water polo team. This role has taught me a great deal about communication, teamwork, and managing multiple responsibilities. When I'm not in the pool or working on a project, I enjoy hiking and exploring the countryside around Bristol.
+                </p>
+            </div>
+        </div>
+    </section>
+    
     <!-- Contact Section -->
     <footer id="contact" class="bg-gray-900 text-white section-padding">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -224,6 +245,7 @@
 
 </body>
 </html>
+
 
 
 
