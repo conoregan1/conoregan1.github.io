@@ -21,14 +21,6 @@
                 padding: 8rem 2rem;
             }
         }
-        .case-study-grid {
-            grid-template-columns: 1fr;
-        }
-        @media (min-width: 1024px) {
-            .case-study-grid {
-                grid-template-columns: 300px 1fr;
-            }
-        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased">
@@ -130,11 +122,20 @@
                        </figure>
                         
                          <p class="text-gray-700 mt-6 font-semibold">Additional System Capabilities:</p>
-                         <ul class="list-disc list-inside text-gray-700 mt-2 space-y-2">
-                            <li><span class="font-semibold">Crash Detection:</span> The system processes normalised accelerometer data to automatically log and classify impacts as 'small' or 'large' events, providing critical data for safety analysis.</li>
-                            <li><span class="font-semibold">GPS Path Visualisation:</span> A tool that ingests the logged GPS data and plots the vehicle's route, colour-coded by time, allowing for trip analysis and driver monitoring.</li>
-                            <li><span class="font-semibold">Robust Hardware & Firmware:</span> The physical data logger includes features like Wi-Fi reconnection logic and IFTTT notifications for critical system events like GPS signal loss or SD card failure, ensuring data integrity.</li>
-                         </ul>
+                         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            <div>
+                                <h5 class="text-lg font-bold text-gray-800">Crash Detection & Safety Analysis</h5>
+                                <p class="text-gray-700 mt-2">The system processes normalised accelerometer data to automatically log and classify impacts as 'small' or 'large' events, providing critical data for safety analysis and preventative maintenance.</p>
+                                <h5 class="text-lg font-bold text-gray-800 mt-4">GPS Path Visualisation</h5>
+                                <p class="text-gray-700 mt-2">A tool that ingests the logged GPS data and plots the vehicle's route, colour-coded by time, allowing for trip analysis and driver monitoring.</p>
+                                <h5 class="text-lg font-bold text-gray-800 mt-4">Robust Hardware & Firmware</h5>
+                                <p class="text-gray-700 mt-2">The physical data logger includes features like Wi-Fi reconnection logic and IFTTT notifications for critical system events like GPS signal loss or SD card failure, ensuring data integrity.</p>
+                            </div>
+                            <figure>
+                               <img src="images/eav-crash-detection-results.png" alt="Graph showing the crash detection algorithm identifying simulated impacts" class="rounded-lg shadow-md w-full">
+                               <figcaption class="text-center mt-2 text-sm text-gray-500">The crash detection algorithm successfully identifying and classifying a series of simulated impacts of increasing force.</figcaption>
+                           </figure>
+                         </div>
                     </div>
                 </div>
             </div>
