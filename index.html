@@ -30,6 +30,14 @@
             overflow-x: auto;
             font-size: 0.875rem;
         }
+        /* Subtle hover effect for nav links */
+        nav a {
+            transition: all 0.2s ease-in-out;
+        }
+        nav a:hover {
+            transform: translateY(-2px);
+            color: #111827; /* gray-900 */
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased">
@@ -42,9 +50,9 @@
                     <a href="#hero" class="text-lg font-bold text-gray-900">Conor Egan</a>
                 </div>
                 <nav class="hidden md:flex md:space-x-8">
-                    <a href="#projects" class="text-gray-600 hover:text-gray-900 transition">Projects</a>
-                    <a href="#about" class="text-gray-600 hover:text-gray-900 transition">About</a>
-                    <a href="#contact" class="text-gray-600 hover:text-gray-900 transition">Contact</a>
+                    <a href="#projects" class="text-gray-600">Projects</a>
+                    <a href="#about" class="text-gray-600">About</a>
+                    <a href="#contact" class="text-gray-600">Contact</a>
                 </nav>
             </div>
         </div>
@@ -54,13 +62,13 @@
     <section id="hero" class="min-h-screen flex items-center bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="max-w-3xl mx-auto">
-                <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight">Product Design Portfolio</h1>
+                <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight">Engineering-Led Product Design</h1>
                 <p class="mt-6 text-lg md:text-xl text-gray-600">
-                    An engineering student passionate about creating intuitive tools for technical users.
+                    Bridging the gap between complex hardware and intuitive software experiences.
                 </p>
                 <div class="mt-8 flex justify-center space-x-4">
                      <a href="mailto:conoregan.london@gmail.com" class="bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition shadow-md">Get in Touch</a>
-                     <a href="#projects" class="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-md border border-gray-300">View Projects</a>
+                     <a href="#projects" class="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-md border border-gray-300">View My Work</a>
                 </div>
             </div>
         </div>
@@ -70,15 +78,15 @@
     <section id="intro" class="section-padding bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-12 items-center">
-                <div class="md:col-span-1">
+                <div class="md-col-span-1">
                     <img src="images/your-photo.jpg" alt="Conor Egan" class="rounded-lg shadow-xl w-full">
                 </div>
-                <div class="md:col-span-2">
+                <div class="md-col-span-2">
                     <h2 class="text-3xl font-bold text-gray-900 mb-4">Hello! I'm Conor.</h2>
                     <p class="text-lg text-gray-600 space-y-4">
                         <span>I'm a final-year MEng Engineering Design student at the University of Bristol.</span>
                         <br><br>
-                        <span>My passion lies at the intersection of complex engineering and user-centric design. I enjoy diving into technical challenges to understand user pain points, then building software tools that make their work more intuitive and efficient. This portfolio showcases two projects where I have applied this approach.</span>
+                        <span>My passion lies at the intersection of complex engineering and user-centric design. I enjoy diving into deep technical challenges to understand user pain points, then building software tools that make their work more intuitive and efficient. This portfolio showcases two projects where I have applied this approach.</span>
                     </p>
                 </div>
             </div>
@@ -90,22 +98,22 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h2 class="text-4xl font-extrabold text-gray-900">My Work</h2>
-                <p class="mt-4 text-lg text-gray-600">A selection of projects that showcase my design process.</p>
+                <p class="mt-4 text-lg text-gray-600">A selection of projects that showcase my end-to-end design process.</p>
             </div>
 
             <!-- Project 1: EAV Health Monitoring System -->
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-16 p-8 md:p-12">
                 <div class="mb-8">
                     <h3 class="text-3xl font-bold text-gray-900">Project 1: EAV Health & Performance Monitoring System</h3>
-                    <p class="mt-2 text-xl text-gray-600">An End-to-End Hardware and Software Solution for Fleet Analytics</p>
+                    <p class="mt-2 text-xl text-gray-600">Delivering Actionable Fleet Insights with a Custom Full-Stack IoT System</p>
                 </div>
 
                 <div class="space-y-12">
                     <!-- The Challenge -->
                     <div>
                         <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge & Academic Context</h4>
-                        <p class="text-gray-700 mb-4">As part of my MEng in Engineering Design, this was my major individual research project, conducted in collaboration with EAV Ltd. The company aims to upgrade its e-cargo bike into a people-carrying e-bike taxi. To do this, they required a high-quality system to monitor vehicle health, track performance, and ensure passenger safety. My individual work forms a key part of the foundation for my upcoming final-year group design project, where a team of seven of us will deliver a complete design for the new vehicle.</p>
-                        <p class="text-gray-700">The core challenge was to design a cost-effective system that could provide fleet managers with actionable insights into vehicle performance, payload, and safety without requiring expensive new mechanical components.</p>
+                        <p class="text-gray-700 mb-4">As my major individual research project for my MEng degree, I collaborated with EAV Ltd. to design a high-quality system to monitor the health, performance, and safety of their next-generation e-bike taxi. This work forms the foundation for my final-year group design project, where a team of seven will deliver a complete vehicle design.</p>
+                        <p class="text-gray-700">The core challenge was to design a cost-effective system to provide fleet managers with actionable insights into vehicle performance, payload, and safety, without requiring expensive new mechanical components.</p>
                     </div>
 
                     <!-- The Solution -->
@@ -117,8 +125,8 @@
                            <figcaption class="text-center mt-2 text-sm text-gray-500">The custom-built hardware data logger, combining an ESP32, GPS, and MPU6050 IMU on a breadboard for prototyping.</figcaption>
                        </figure>
                         <ul class="list-disc list-inside text-gray-700 mt-4 space-y-2 mb-6">
-                            <li>Embedded C++ Firmware: I developed robust firmware for the ESP32 microcontroller that performs on-board sensor fusion using a Kalman filter for accurate orientation tracking and logs all data reliably to an SD card.</li>
-                            <li>Python Analysis Suite: I wrote a collection of Python scripts to automatically parse, process, and analyse the raw data, providing valuable insights for fleet managers.</li>
+                            <li>**Embedded C++ Firmware:** I developed robust firmware for the ESP32 microcontroller that performs on-board sensor fusion using a Kalman filter for accurate orientation tracking and logs all data reliably to an SD card.</li>
+                            <li>**Python Analysis Suite:** I wrote a collection of Python scripts to automatically parse, process, and analyse the raw data, providing valuable insights for fleet managers.</li>
                         </ul>
                     </div>
 
@@ -190,12 +198,12 @@
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden p-8 md:p-12">
                 <div class="mb-8">
                    <h3 class="text-3xl font-bold text-gray-900">Project 2: Designing for Engineers at Airborne UK</h3>
-                   <p class="mt-2 text-xl text-gray-600">Improving Workflows with User-Focused Internal Tools</p>
+                   <p class="mt-2 text-xl text-gray-600">Boosting Engineering Efficiency with Custom-Built Automation & QC Tools</p>
                </div>
                <div class="space-y-12">
                     <div>
                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge</h4>
-                       <p class="text-gray-700 mb-6">During my year in industry, I inherited two early-stage internal projects: a basic script for quality control and another for environmental monitoring. I was tasked with transforming them into robust, user-friendly tools that would improve the efficiency of the engineering and quality control teams. As the work was proprietary, all visuals shown are from my university report.</p>
+                       <p class="text-gray-700 mb-6">During my year in industry, I was tasked with transforming two early-stage internal projects into robust, user-friendly tools that would improve the efficiency of the engineering and quality control teams. As this work was proprietary and covered by a confidentiality agreement, I cannot share the source code or final user interfaces. However, the visuals shown below are from my university report and illustrate the key design processes and technical challenges I solved.</p>
                    </div>
                    
                    <!-- Solution 1: Monitoring Dashboard -->
@@ -246,7 +254,7 @@
                     I'm driven by a curiosity for how things work, which is what led me to engineering. I enjoy the process of breaking down a complex problem into its core components and building a solution from the ground up, whether that's a piece of hardware or a software tool.
                 </p>
                 <p>
-                    Outside of academia, I've honed my leadership and teamwork skills through a long-standing commitment to university water polo. I have held several committee positions, including 2nd Team Captain in the 2022-2023 season and Alumni and Sponsorship Secretary for the 2024-2025 season. These roles have been invaluable for developing my skills in communication, organisation, and project management.
+                    Outside of academia, I've honed my leadership and teamwork skills through a long-standing commitment to university water polo. I have held several committee positions, including 2nd Team Captain (2022-2023) and Alumni & Sponsorship Secretary (2024-2025). These roles have been invaluable for developing my skills in communication, organisation, and project management in a collaborative, high-pressure environment.
                 </p>
             </div>
         </div>
@@ -255,9 +263,9 @@
     <!-- Contact Section -->
     <footer id="contact" class="bg-gray-900 text-white section-padding">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-3xl font-bold">Thank You</h2>
+            <h2 class="text-3xl font-bold">Let's Connect</h2>
             <p class="mt-4 text-lg text-gray-300 max-w-2xl mx-auto">
-                Thank you for taking the time to review my work. I am passionate about using my engineering background to design and build better tools. I would be thrilled to discuss how I could contribute to the team at Palantir.
+                Thank you for taking the time to review my work. I am passionate about using my engineering background to design and build better tools, and I would be thrilled to discuss how I could contribute to the team at Palantir.
             </p>
              <div class="mt-8 flex justify-center space-x-6">
                 <a href="mailto:conoregan.london@gmail.com" class="text-gray-300 hover:text-white transition">conoregan.london@gmail.com</a>
@@ -272,5 +280,4 @@
 
 </body>
 </html>
-
 
