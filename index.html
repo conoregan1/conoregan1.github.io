@@ -94,70 +94,75 @@
             <!-- Project 1: EAV Health Monitoring System -->
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-16 p-8 md:p-12">
                 <div class="mb-8">
-                    <h3 class="text-3xl font-bold text-gray-900">Project 1: EAV Health Monitoring System</h3>
-                    <p class="mt-2 text-xl text-gray-600">A Predictive Dashboard for EV Fleet Managers</p>
+                    <h3 class="text-3xl font-bold text-gray-900">Project 1: EAV Health & Performance Monitoring System</h3>
+                    <p class="mt-2 text-xl text-gray-600">An End-to-End Hardware and Software Solution for Fleet Analytics</p>
                 </div>
-
+            
                 <div class="space-y-12">
                     <!-- The Problem & User -->
                     <div>
                         <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge</h4>
-                        <p class="text-gray-700">Fleet managers of commercial Electric-Assisted Vehicles (EAVs) have no easy way to monitor the long-term health of their vehicle batteries. This leads to unexpected failures, costly downtime, and inefficient maintenance scheduling. They need a tool that can predict battery degradation before it becomes a critical issue.</p>
+                        <p class="text-gray-700">Fleet managers of commercial Electric-Assisted Vehicles (EAVs) lack the tools to monitor vehicle performance, driver behaviour, and long-term system health. This leads to inefficient operations, unexpected maintenance, and an inability to accurately assess key metrics like payload and vehicle safety in the field.</p>
                     </div>
-
-                    <!-- The Design Process -->
-                    <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">My Design Process</h4>
-                        <p class="text-gray-700 mb-6">I started with low-fidelity sketches to explore layouts, focusing on a clear visual hierarchy for a non-technical user. This evolved into digital wireframes to solidify the structure before visual design.</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <figure>
-                                <img src="https://placehold.co/600x400/e2e8f0/333333?text=Sketch+of+UI" alt="Sketch of UI" class="rounded-lg shadow-md w-full">
-                                <figcaption class="text-center mt-2 text-sm text-gray-500">Initial sketches exploring dashboard concepts.</figcaption>
-                            </figure>
-                            <figure>
-                                <img src="https://placehold.co/600x400/e2e8f0/333333?text=Wireframe+of+UI" alt="Wireframe of UI" class="rounded-lg shadow-md w-full">
-                                <figcaption class="text-center mt-2 text-sm text-gray-500">Main dashboard wireframe establishing key modules.</figcaption>
-                            </figure>
-                        </div>
-                    </div>
-
+            
                     <!-- The Solution -->
                     <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Proposed Solution</h4>
-                        <p class="text-gray-700 mb-6">The proposed solution is a clean, intuitive dashboard that provides a predictive "State of Health" (SoH) score for each vehicle in the fleet, allowing managers to quickly identify at-risk vehicles and schedule maintenance proactively.</p>
-                        <div class="bg-gray-100 p-4 rounded-lg shadow-inner">
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">My Solution: A Full-Stack Approach</h4>
+                        <p class="text-gray-700 mb-6">To solve this, I designed and developed a complete end-to-end system. This wasn't just a piece of software, but a full stack solution involving:</p>
+                        <ul class="list-disc list-inside text-gray-700 mt-2 space-y-2 mb-6">
+                            <li>A custom-built **hardware data logger** using an ESP32 microcontroller, GPS, and a 6-axis IMU to capture high-frequency vehicle dynamics.</li>
+                            <li>Embedded C++ firmware with Kalman filtering for accurate real-time orientation tracking and robust data logging to an SD card.</li>
+                            <li>A suite of **Python-based analysis tools** to process the raw data, providing actionable insights through a clear user interface.</li>
+                        </ul>
+                         <div class="bg-gray-100 p-4 rounded-lg shadow-inner">
                             <img src="https://placehold.co/1200x750/333333/ffffff?text=High-Fidelity+Dashboard+Mockup" alt="High-fidelity mockup of the EAV Health Dashboard" class="rounded-lg shadow-lg w-full">
-                        </div>
-                         <p class="text-gray-700 mt-6 font-semibold">Key Design Decisions:</p>
-                         <ul class="list-disc list-inside text-gray-700 mt-2 space-y-2">
-                            <li><span class="font-semibold">Prioritised "At-a-Glance" Info:</span> The main SoH score is the largest element, using colour-coding (green, yellow, red) so the manager can assess fleet health in seconds.</li>
-                            <li><span class="font-semibold">Action-Oriented List:</span> The vehicle list is sorted by the most critical batteries first, telling the user exactly where to focus their attention.</li>
-                            <li><span class="font-semibold">Clear Data Visualisation:</span> The "Health Over Time" graph helps the user spot trends in battery degradation, turning complex data into a simple visual story.</li>
-                         </ul>
+                            <p class="text-center mt-4 text-sm text-gray-600">A high-fidelity mockup of the proposed dashboard, designed to translate complex vehicle data into clear, actionable insights for a fleet manager.</p>
+                         </div>
                     </div>
-                     <!-- The Technical Implementation -->
+            
+                    <!-- The Technical Implementation -->
                     <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Technical Implementation</h4>
-                        <p class="text-gray-700 mb-6">The core of the system is a Python script that analyses raw battery data to generate the health score. The logic is clearly commented to be understood by other developers.</p>
+                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Key Features & Technical Implementation</h4>
+                        <p class="text-gray-700 mb-6">The system is capable of performing several key analyses, transforming raw sensor data into high-level insights for the end-user. Below is a sample from the mass estimation model.</p>
+                        
                         <div class="bg-gray-900 rounded-lg p-6 text-sm text-white font-mono shadow-md">
-                            <pre><code># This function takes in raw sensor readings and calculates a weighted SoH score.
-def calculate_state_of_health(voltage_readings, temp_readings):
-    # Normalize readings
-    norm_voltage = normalize(voltage_readings)
-    norm_temp = normalize(temp_readings)
-
-    # Apply weighting (example weights)
-    voltage_weight = 0.6
-    temp_weight = 0.4
-    
-    health_score = (norm_voltage * voltage_weight) + (norm_temp * temp_weight)
-    
-    return round(health_score * 100, 2)</code></pre>
+                            <p class="text-gray-400 font-sans text-base mb-2">// mass_estimation.py - A snippet from the physics-based model</p>
+                            <pre><code># This function estimates vehicle mass based on acceleration,
+            # motor force, and IMU-derived incline data.
+            def estimate_mass(df):
+                # Filter for periods of significant movement to ensure data quality
+                df_moving = filter_moving_periods(df)
+                if df_moving.empty:
+                    raise ValueError("No moving periods detected")
+                
+                # Smooth acceleration data to reduce sensor noise
+                window_size = calculate_optimal_window(len(df_moving))
+                df_moving['accel_smoothed'] = smooth_data(df_moving['accel_magnitude'], window_size)
+                
+                # Isolate periods of significant acceleration
+                df_accelerating = df_moving[df_moving['accel_smoothed'] > MIN_ACCELERATION].copy()
+                if df_accelerating.empty:
+                    raise ValueError("No valid acceleration events")
+                    
+                # Apply physics-based formula to estimate mass at each data point
+                df_accelerating['mass_estimate'] = MOTOR_FORCE / (
+                    df_accelerating['accel_smoothed'] + 
+                    ROLLING_RESISTANCE_COEFFICIENT * GRAVITY + 
+                    GRAVITY * np.sin(df_accelerating['incline_angle'])
+                )
+                
+                return df_accelerating</code></pre>
                         </div>
-                        <p class="text-gray-700 mt-6"><span class="font-semibold">Next Steps:</span> Currently, the data analysis module is complete. The next step is to build a functional prototype by connecting this Python backend to a web framework like Flask or Django to serve the dashboard interface.</p>
+                         <p class="text-gray-700 mt-6 font-semibold">Additional System Capabilities:</p>
+                         <ul class="list-disc list-inside text-gray-700 mt-2 space-y-2">
+                            <li><span class="font-semibold">Crash Detection:</span> The system processes normalised accelerometer data to automatically log and classify impacts as 'small' or 'large' events, providing critical data for safety analysis.</li>
+                            <li><span class="font-semibold">GPS Path Visualisation:</span> A tool that ingests the logged GPS data and plots the vehicle's route, colour-coded by time, allowing for trip analysis and driver monitoring.</li>
+                            <li><span class="font-semibold">Robust Hardware & Firmware:</span> The physical data logger includes features like Wi-Fi reconnection logic and IFTTT notifications for critical system events like GPS signal loss or SD card failure, ensuring data integrity.</li>
+                         </ul>
                     </div>
                 </div>
             </div>
+
 
             <!-- Project 2: Airborne UK -->
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden p-8 md:p-12">
@@ -219,6 +224,7 @@ def calculate_state_of_health(voltage_readings, temp_readings):
 
 </body>
 </html>
+
 
 
 
