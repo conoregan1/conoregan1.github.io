@@ -55,7 +55,11 @@
   .status-val { font-size: 0.68rem; font-weight: 600; }
 
   /* File info */
-  .info-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .info-row {
+    display: flex; justify-content: space-between;
+    font-size: 0.82rem; padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
   .info-row:last-child { border-bottom: none; }
   .info-key { color: var(--muted); }
   .info-val { font-family: var(--mono); font-weight: 600; color: var(--accent); }
@@ -70,12 +74,12 @@
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
   .btn + .btn { margin-top: 8px; }
-  .btn-primary  { background: var(--accent);  color: #fff; }
-  .btn-secondary{ background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-  .btn-green    { background: var(--green);   color: #0a2a1e; }
-  .btn-orange   { background: #2a1f0a;        color: var(--orange); border: 1px solid #5a3a00; }
-  .btn-red      { background: #3d1f1f;        color: var(--red);    border: 1px solid #5a2a2a; }
-  .btn-blue     { background: #0a1a3a;        color: var(--accent); border: 1px solid #1a3a6a; }
+  .btn-primary   { background: var(--accent);   color: #fff; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-green     { background: var(--green);    color: #0a2a1e; }
+  .btn-orange    { background: #2a1f0a;         color: var(--orange); border: 1px solid #5a3a00; }
+  .btn-red       { background: #3d1f1f;         color: var(--red);    border: 1px solid #5a2a2a; }
+  .btn-blue      { background: #0a1a3a;         color: var(--accent); border: 1px solid #1a3a6a; }
 
   /* Logging state banner */
   .state-banner {
@@ -93,9 +97,15 @@
     background: var(--surface2); border-radius: 6px;
     height: 10px; overflow: hidden; margin: 10px 0 4px;
   }
-  .progress-bar { height: 100%; background: var(--accent); border-radius: 6px; width: 0%; transition: width 0.4s ease; }
+  .progress-bar {
+    height: 100%; background: var(--accent);
+    border-radius: 6px; width: 0%; transition: width 0.4s ease;
+  }
   .progress-bar.done { background: var(--green); }
-  .progress-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 8px; }
+  .progress-stats {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 6px; margin-top: 8px;
+  }
   .pstat { background: var(--surface2); border-radius: 6px; padding: 6px 8px; text-align: center; }
   .pstat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .pstat-val { font-family: var(--mono); font-size: 0.82rem; font-weight: 600; color: var(--text); margin-top: 2px; }
@@ -155,9 +165,7 @@
 <!-- ── Logging Control ────────────────────── -->
 <div class="card">
   <div class="card-title">Logging Control</div>
-
   <div class="state-banner off" id="state-banner">● Logging is OFF</div>
-
   <div class="btn-row">
     <button class="btn btn-green"  id="btn-start" onclick="sendCmd('START')" disabled>▶ Start Logging</button>
     <button class="btn btn-orange" id="btn-pause" onclick="sendCmd('PAUSE')" disabled>⏸ Pause Logging</button>
@@ -170,8 +178,8 @@
 <!-- ── File Info ───────────────────────────── -->
 <div class="card">
   <div class="card-title">data.txt on SD Card</div>
-  <div class="info-row"><span class="info-key">File size</span>       <span class="info-val" id="info-size">—</span></div>
-  <div class="info-row"><span class="info-key">Rows logged</span>     <span class="info-val" id="info-rows">—</span></div>
+  <div class="info-row"><span class="info-key">File size</span>        <span class="info-val" id="info-size">—</span></div>
+  <div class="info-row"><span class="info-key">Rows logged</span>      <span class="info-val" id="info-rows">—</span></div>
   <div class="info-row"><span class="info-key">Est. transfer time</span><span class="info-val" id="info-eta">—</span></div>
 </div>
 
@@ -180,7 +188,8 @@
   <div class="card-title">Transfer &amp; Export</div>
 
   <div class="warn-box" id="warn-transfer">
-    ⚠️ SD logging is <strong>paused</strong> while transferring. Stop logging first for cleanest results.
+    ⚠️ SD logging is <strong>paused</strong> while transferring.
+    Stop logging first for cleanest results.
   </div>
 
   <div class="progress-wrap" id="prog-wrap" style="display:none">
@@ -216,10 +225,16 @@
 </div>
 
 <script>
+// ===================================================================
+// UUIDs — must match Arduino sketch exactly
+// ===================================================================
 const SERVICE_UUID     = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 
+// ===================================================================
+// State
+// ===================================================================
 let device     = null;
 let notifyChar = null;
 let writeChar  = null;
@@ -235,12 +250,16 @@ let dumpLineBuffer  = '';
 let dumpStartTime   = 0;
 let dumpSpeedSmooth = 0;
 
+// Detect iOS once on load
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 // ===================================================================
 // BLE Connection
 // ===================================================================
 async function connectBLE() {
   if (!navigator.bluetooth) {
-    log('❌ Web Bluetooth not available. Use Edge, Chrome, or Bluefy.');
+    log('❌ Web Bluetooth not available. Use Edge, Chrome, or Bluefy on iPhone.');
     return;
   }
   try {
@@ -259,12 +278,12 @@ async function connectBLE() {
     notifyChar.addEventListener('characteristicvaluechanged', onData);
     setDot('ble', 'green', 'Connected');
     log('✅ Connected to ' + device.name);
+    if (isIOS) log('📱 iOS detected — files will open the Share Sheet');
     document.getElementById('btn-connect').disabled    = true;
     document.getElementById('btn-disconnect').disabled = false;
-    // Enable logging controls
-    document.getElementById('btn-start').disabled  = false;
-    document.getElementById('btn-stop-dl').disabled = false;
-    document.getElementById('btn-dump').disabled   = false;
+    document.getElementById('btn-start').disabled      = false;
+    document.getElementById('btn-stop-dl').disabled    = false;
+    document.getElementById('btn-dump').disabled       = false;
   } catch (e) {
     log('❌ ' + e.message);
     setDot('ble', 'red', 'Failed');
@@ -294,19 +313,19 @@ function onDisconnected() {
 }
 
 // ===================================================================
-// Incoming data
+// Incoming data handler
 // ===================================================================
 function onData(event) {
   const raw = new TextDecoder().decode(event.target.value);
 
-  // STATUS packet: STATUS,LOGGING|PAUSED|OFF,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,fileBytes,rowsLogged
+  // STATUS,LOGGING|PAUSED|OFF,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,fileBytes,rowsLogged
   if (raw.startsWith('STATUS,')) {
-    const p = raw.split(',');
-    const state  = p[1];
-    const gpsOk  = p[2] === 'GPS_OK';
-    const sdOk   = p[3] === 'SD_OK';
-    const bytes  = parseInt(p[4]) || 0;
-    const rows   = parseInt(p[5]) || 0;
+    const p     = raw.split(',');
+    const state = p[1];
+    const gpsOk = p[2] === 'GPS_OK';
+    const sdOk  = p[3] === 'SD_OK';
+    const bytes = parseInt(p[4]) || 0;
+    const rows  = parseInt(p[5]) || 0;
     setLogState(state);
     setDot('gps', gpsOk ? 'green' : 'orange', gpsOk ? 'Fix' : 'No fix');
     setDot('sd',  sdOk  ? 'green' : 'red',    sdOk  ? 'OK'  : 'Failed');
@@ -319,7 +338,7 @@ function onData(event) {
   if (raw.trim() === '##LOG_PAUSED##')  { setLogState('PAUSED');  log('⏸ Logging paused');  return; }
   if (raw.trim() === '##LOG_STOPPED##') { setLogState('OFF');     log('⏹ Logging stopped'); return; }
 
-  // Dump start: ##START,<bytes>##
+  // Dump start: ##START,<totalBytes>##
   if (raw.startsWith('##START,')) {
     const m = raw.match(/##START,(\d+)##/);
     dumpTotalBytes  = m ? parseInt(m[1]) : 0;
@@ -333,7 +352,7 @@ function onData(event) {
     showProgress(true);
     document.getElementById('warn-transfer').style.display = 'block';
     document.getElementById('btn-dump').disabled = true;
-    log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes));
+    log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes) + ' to receive');
     return;
   }
 
@@ -347,16 +366,18 @@ function onData(event) {
     const elapsed = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
     document.getElementById('prog-bar').classList.add('done');
     document.getElementById('prog-bar').style.width = '100%';
-    document.getElementById('warn-transfer').style.display = 'none';
+    document.getElementById('warn-transfer').style.display  = 'none';
     document.getElementById('btn-save-csv').disabled = false;
     document.getElementById('btn-save-txt').disabled = false;
     document.getElementById('btn-clear').disabled    = false;
     document.getElementById('btn-dump').disabled     = false;
     updateFileInfo(dumpRecvBytes, dumpLineCount);
     log('✅ Transfer complete — ' + dumpLineCount.toLocaleString() + ' rows in ' + elapsed + 's');
+    if (isIOS) log('📱 Tap Save as CSV or Save as raw .txt to open the Share Sheet');
     return;
   }
 
+  // Errors
   if (raw.startsWith('##ERROR')) {
     log('❌ ' + raw.replace(/##/g, ''));
     inDump = false;
@@ -393,33 +414,27 @@ function onData(event) {
 // ===================================================================
 function setLogState(state) {
   logState = state;
-  const banner = document.getElementById('state-banner');
+  const banner    = document.getElementById('state-banner');
+  const connected = !document.getElementById('btn-disconnect').disabled;
 
-  // Dot and banner
   if (state === 'LOGGING') {
     setDot('log', 'green', 'Logging');
-    banner.className = 'state-banner logging';
+    banner.className   = 'state-banner logging';
     banner.textContent = '● Logging is ACTIVE';
   } else if (state === 'PAUSED') {
     setDot('log', 'orange', 'Paused');
-    banner.className = 'state-banner paused';
+    banner.className   = 'state-banner paused';
     banner.textContent = '⏸ Logging is PAUSED';
   } else {
     setDot('log', 'red', 'Off');
-    banner.className = 'state-banner off';
+    banner.className   = 'state-banner off';
     banner.textContent = '● Logging is OFF';
   }
 
-  // Button states
-  const connected = !document.getElementById('btn-disconnect').disabled;
-  document.getElementById('btn-start').disabled =
-    !connected || state === 'LOGGING';
-  document.getElementById('btn-pause').disabled =
-    !connected || state !== 'LOGGING';
-  document.getElementById('btn-stop').disabled =
-    !connected || state === 'OFF';
-  document.getElementById('btn-dump').disabled =
-    !connected || inDump;
+  document.getElementById('btn-start').disabled = !connected || state === 'LOGGING';
+  document.getElementById('btn-pause').disabled = !connected || state !== 'LOGGING';
+  document.getElementById('btn-stop').disabled  = !connected || state === 'OFF';
+  document.getElementById('btn-dump').disabled  = !connected || inDump;
 }
 
 // ===================================================================
@@ -428,7 +443,7 @@ function setLogState(state) {
 async function stopAndDownload() {
   if (logState !== 'OFF') {
     await sendCmd('STOP');
-    // Small delay to let ESP32 flush before starting dump
+    // Wait for ESP32 to flush final buffer before opening file
     await new Promise(r => setTimeout(r, 1500));
   }
   requestDump();
@@ -471,10 +486,12 @@ function updateFileInfo(bytes, rows) {
 // ===================================================================
 function saveCSV() {
   if (!dumpChunks.length) { log('No data to save.'); return; }
+  log('Converting to CSV…');
   const header  = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n';
   const allText = dumpChunks.join('');
   const lines   = allText.split('\n');
   const rows    = [];
+
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;
@@ -494,10 +511,11 @@ function saveCSV() {
       rows.push(time+','+lat+','+lon+','+acc[0]+','+acc[1]+','+acc[2]+','+roll+','+pitch+','+yaw);
     } catch(e) { /* skip malformed */ }
   }
+
   if (!rows.length) { log('❌ No valid rows found — check data format'); return; }
   const date = new Date().toISOString().slice(0, 10);
   download(header + rows.join('\n'), date + '.csv', 'text/csv');
-  log('💾 Saved ' + date + '.csv — ' + rows.length.toLocaleString() + ' rows');
+  log('💾 ' + rows.length.toLocaleString() + ' rows ready — ' + (isIOS ? 'Share Sheet opened' : 'downloading ' + date + '.csv'));
 }
 
 function saveTXT() {
@@ -505,15 +523,51 @@ function saveTXT() {
   const txt  = dumpChunks.join('');
   const date = new Date().toISOString().slice(0, 10);
   download(txt, date + '_data.txt', 'text/plain');
-  log('📄 Saved ' + date + '_data.txt (' + fmtBytes(txt.length) + ')');
+  log('📄 ' + fmtBytes(txt.length) + ' ready — ' + (isIOS ? 'Share Sheet opened' : 'downloading ' + date + '_data.txt'));
 }
 
+// ===================================================================
+// Download function — desktop and iOS both handled
+// ===================================================================
 function download(content, filename, mime) {
   const blob = new Blob([content], { type: mime });
   const url  = URL.createObjectURL(blob);
-  const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
-  a.click();
-  URL.revokeObjectURL(url);
+
+  if (isIOS) {
+    // iOS blocks programmatic <a download> entirely.
+    // Use the Web Share API with a File object — this opens the
+    // native iOS share sheet so the user can save to Files,
+    // AirDrop, email, etc.
+    if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: mime })] })) {
+      const file = new File([blob], filename, { type: mime });
+      navigator.share({ files: [file], title: filename })
+        .then(() => URL.revokeObjectURL(url))
+        .catch(err => {
+          // User cancelled share or share failed — fall back to new tab
+          if (err.name !== 'AbortError') {
+            log('Share failed, opening in new tab instead');
+            window.open(url, '_blank');
+          } else {
+            // User just cancelled — that's fine
+            URL.revokeObjectURL(url);
+          }
+        });
+    } else {
+      // Older iOS without file sharing support — open in new tab.
+      // User can then tap Share → Save to Files from the browser toolbar.
+      window.open(url, '_blank');
+      log('📄 Tap the Share button in your browser toolbar → Save to Files');
+    }
+  } else {
+    // Desktop (Windows/Mac/Android) — standard programmatic download
+    const a = Object.assign(document.createElement('a'), {
+      href: url, download: filename
+    });
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
 }
 
 // ===================================================================
@@ -552,10 +606,8 @@ async function clearSD() {
 // UI Helpers
 // ===================================================================
 function setDot(id, colour, text) {
-  const dot = document.getElementById('dot-' + id);
-  const val = document.getElementById('val-' + id);
-  dot.className = 'status-dot' + (colour ? ' ' + colour : '');
-  val.textContent = text;
+  document.getElementById('dot-' + id).className = 'status-dot' + (colour ? ' ' + colour : '');
+  document.getElementById('val-' + id).textContent = text;
 }
 
 function log(msg) {
@@ -566,15 +618,15 @@ function log(msg) {
 }
 
 function fmtBytes(b) {
-  if (b >= 1048576) return (b/1048576).toFixed(1) + ' MB';
-  if (b >= 1024)    return (b/1024).toFixed(1)    + ' KB';
+  if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB';
+  if (b >= 1024)    return (b / 1024).toFixed(1)    + ' KB';
   return b + ' B';
 }
 
 function fmtTime(sec) {
   const s = Math.round(sec);
-  if (s >= 3600) return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
-  if (s >= 60)   return Math.floor(s/60) + 'm ' + (s%60) + 's';
+  if (s >= 3600) return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+  if (s >= 60)   return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
   return s + 's';
 }
 </script>
