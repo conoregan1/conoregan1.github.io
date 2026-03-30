@@ -115,18 +115,13 @@
   }
 
   .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-  /* Divider line above wipe button to make it feel separate */
-  .danger-divider {
-    border: none; border-top: 1px solid var(--border);
-    margin: 12px 0 10px;
-  }
+  .danger-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0 10px; }
 </style>
 </head>
 <body>
 
 <h1>ESP32 <span>Sensor Logger</span></h1>
-<p class="sub">Edge / Chrome on Windows·Mac·Android &nbsp;·&nbsp; Bluefy on iPhone</p>
+<p class="sub">Edge / Chrome on Windows·Mac·Android &nbsp;·&nbsp; Bluefy on iPhone &nbsp;·&nbsp; Binary format</p>
 
 <!-- ── Status ─────────────────────────────── -->
 <div class="card">
@@ -174,9 +169,9 @@
 
 <!-- ── File Info ───────────────────────────── -->
 <div class="card">
-  <div class="card-title">data.txt on SD Card</div>
-  <div class="info-row"><span class="info-key">File size</span>        <span class="info-val" id="info-size">—</span></div>
-  <div class="info-row"><span class="info-key">Rows logged</span>      <span class="info-val" id="info-rows">—</span></div>
+  <div class="card-title">data.bin on SD Card</div>
+  <div class="info-row"><span class="info-key">File size</span>         <span class="info-val" id="info-size">—</span></div>
+  <div class="info-row"><span class="info-key">Rows logged</span>       <span class="info-val" id="info-rows">—</span></div>
   <div class="info-row"><span class="info-key">Est. transfer time</span><span class="info-val" id="info-eta">—</span></div>
 </div>
 
@@ -186,7 +181,7 @@
 
   <div class="warn-box" id="warn-transfer">
     ⚠️ SD logging is <strong>paused</strong> while transferring.
-    Stop logging first for cleanest results.
+    Stop logging first for best results.
   </div>
 
   <div class="progress-wrap" id="prog-wrap" style="display:none">
@@ -194,7 +189,7 @@
   </div>
   <div class="progress-stats" id="prog-stats" style="display:none">
     <div class="pstat"><div class="pstat-label">Received</div><div class="pstat-val" id="ps-recv">—</div></div>
-    <div class="pstat"><div class="pstat-label">Rows</div>    <div class="pstat-val" id="ps-rows">—</div></div>
+    <div class="pstat"><div class="pstat-label">Records</div> <div class="pstat-val" id="ps-rows">—</div></div>
     <div class="pstat"><div class="pstat-label">ETA</div>     <div class="pstat-val" id="ps-eta">—</div></div>
   </div>
 
@@ -202,19 +197,18 @@
     ⏹💾 Stop &amp; Download
   </button>
   <button class="btn btn-secondary" id="btn-dump"     onclick="requestDump()"    disabled>
-    📥 Download data.txt from SD
+    📥 Download data.bin from SD
   </button>
   <button class="btn btn-green"     id="btn-save-csv" onclick="saveCSV()"        disabled>
-    💾 Save as CSV
+    💾 Save as CSV (same format as Python output)
   </button>
-  <button class="btn btn-orange"    id="btn-save-txt" onclick="saveTXT()"        disabled>
-    📄 Save as raw .txt
+  <button class="btn btn-orange"    id="btn-save-bin" onclick="saveBIN()"        disabled>
+    📦 Save raw .bin (for Python script)
   </button>
 
-  <!-- Wipe is now always available once connected — no download required first -->
   <hr class="danger-divider">
   <button class="btn btn-red" id="btn-clear" onclick="clearSD()" disabled>
-    🗑 Wipe data.txt on SD card
+    🗑 Wipe data.bin on SD card
   </button>
 </div>
 
@@ -232,20 +226,46 @@ const SERVICE_UUID     = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 
+// ===================================================================
+// Binary format constants — must match Arduino sketch exactly
+// ===================================================================
+const RECORD_SIZE  = 37;
+const SYNC_BYTE    = 0xAA;
+const FILE_MAGIC   = [0x45, 0x53, 0x50, 0x42]; // "ESPB"
+
+// Record field offsets within a 37-byte record
+const OFF_SYNC      = 0;
+const OFF_HOUR      = 1;
+const OFF_MINUTE    = 2;
+const OFF_SECOND    = 3;
+const OFF_GPS_VALID = 4;
+const OFF_LAT_E6    = 5;   // Int32, little-endian
+const OFF_LON_E6    = 9;   // Int32, little-endian
+const OFF_ACCEL_X   = 13;  // Float32, little-endian
+const OFF_ACCEL_Y   = 17;
+const OFF_ACCEL_Z   = 21;
+const OFF_ROLL      = 25;
+const OFF_PITCH     = 29;
+const OFF_YAW       = 33;
+
+// ===================================================================
+// State
+// ===================================================================
 let device     = null;
 let notifyChar = null;
 let writeChar  = null;
 let logState   = 'OFF';
 
+// Transfer state
 let inDump          = false;
 let dumpTotalBytes  = 0;
 let dumpRecvBytes   = 0;
-let dumpChunks      = [];
-let dumpLineCount   = 0;
-let dumpLineBuffer  = '';
+let dumpChunksList  = [];   // list of Uint8Array — raw binary chunks
+let dumpLineCount   = 0;    // running record count estimate
 let dumpStartTime   = 0;
 let dumpSpeedSmooth = 0;
 
+// iOS detection
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -273,13 +293,12 @@ async function connectBLE() {
     notifyChar.addEventListener('characteristicvaluechanged', onData);
     setDot('ble', 'green', 'Connected');
     log('✅ Connected to ' + device.name);
-    if (isIOS) log('📱 iOS detected — files will open the Share Sheet');
+    if (isIOS) log('📱 iOS detected — export uses Share Sheet');
     document.getElementById('btn-connect').disabled    = true;
     document.getElementById('btn-disconnect').disabled = false;
     document.getElementById('btn-start').disabled      = false;
     document.getElementById('btn-stop-dl').disabled    = false;
     document.getElementById('btn-dump').disabled       = false;
-    // FIX 2: Clear is enabled as soon as we connect — no download needed first
     document.getElementById('btn-clear').disabled      = false;
   } catch (e) {
     log('❌ ' + e.message);
@@ -294,15 +313,10 @@ function disconnectBLE() {
 function onDisconnected() {
   log('⚠️ Disconnected.');
   setDot('ble', 'red', 'Off');
-  setDot('log', '', '—');
-  setDot('gps', '', '—');
-  setDot('sd',  '', '—');
+  setDot('log', '', '—'); setDot('gps', '', '—'); setDot('sd', '', '—');
   ['btn-connect','btn-start','btn-pause','btn-stop',
-   'btn-stop-dl','btn-dump','btn-save-csv','btn-save-txt','btn-clear']
-    .forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.disabled = true;
-    });
+   'btn-stop-dl','btn-dump','btn-save-csv','btn-save-bin','btn-clear']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
   document.getElementById('btn-connect').disabled    = false;
   document.getElementById('btn-disconnect').disabled = true;
   inDump = false;
@@ -313,10 +327,30 @@ function onDisconnected() {
 // Incoming data handler
 // ===================================================================
 function onData(event) {
-  const raw = new TextDecoder().decode(event.target.value);
+  const dv    = event.target.value;      // DataView
+  const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
 
-  if (raw.startsWith('STATUS,')) {
-    const p     = raw.split(',');
+  // Route by first byte:
+  //   0x23 = '#' → ASCII control message
+  //   anything else (expected 0xAA binary data or file header 0x45 'E') → binary
+  if (bytes[0] === 0x23) {
+    // ASCII control message
+    const text = new TextDecoder().decode(dv).trim();
+    handleControlMessage(text);
+  } else if (inDump) {
+    // Binary data chunk
+    handleBinaryChunk(bytes);
+  }
+}
+
+// ===================================================================
+// Control message handler (all text, first byte is '#')
+// ===================================================================
+function handleControlMessage(text) {
+
+  // STATUS,LOGGING|PAUSED|OFF,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,fileBytes,rowsLogged
+  if (text.startsWith('STATUS,')) {
+    const p     = text.split(',');
     const state = p[1];
     const gpsOk = p[2] === 'GPS_OK';
     const sdOk  = p[3] === 'SD_OK';
@@ -329,47 +363,51 @@ function onData(event) {
     return;
   }
 
-  if (raw.trim() === '##LOG_STARTED##') { setLogState('LOGGING'); log('▶ Logging started'); return; }
-  if (raw.trim() === '##LOG_PAUSED##')  { setLogState('PAUSED');  log('⏸ Logging paused');  return; }
-  if (raw.trim() === '##LOG_STOPPED##') { setLogState('OFF');     log('⏹ Logging stopped'); return; }
+  if (text === '##LOG_STARTED##') { setLogState('LOGGING'); log('▶ Logging started'); return; }
+  if (text === '##LOG_PAUSED##')  { setLogState('PAUSED');  log('⏸ Logging paused');  return; }
+  if (text === '##LOG_STOPPED##') { setLogState('OFF');     log('⏹ Logging stopped'); return; }
 
-  if (raw.startsWith('##START,')) {
-    const m = raw.match(/##START,(\d+)##/);
+  // Dump start: ##START,<totalBytes>,BIN##
+  if (text.startsWith('##START,') && text.endsWith(',BIN##')) {
+    const m = text.match(/##START,(\d+),BIN##/);
     dumpTotalBytes  = m ? parseInt(m[1]) : 0;
     dumpRecvBytes   = 0;
-    dumpChunks      = [];
+    dumpChunksList  = [];
     dumpLineCount   = 0;
-    dumpLineBuffer  = '';
     dumpStartTime   = Date.now();
     dumpSpeedSmooth = 0;
     inDump = true;
     showProgress(true);
     document.getElementById('warn-transfer').style.display = 'block';
     document.getElementById('btn-dump').disabled  = true;
-    document.getElementById('btn-clear').disabled = true;  // lock during transfer
-    log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes) + ' to receive');
+    document.getElementById('btn-clear').disabled = true;
+    log('📡 Binary transfer started — ' + fmtBytes(dumpTotalBytes));
+    log('   11 records × 37 bytes per BLE packet');
     return;
   }
 
-  if (raw.trim() === '##END##') {
-    if (dumpLineBuffer.trim()) { dumpLineCount++; dumpLineBuffer = ''; }
+  // Dump end
+  if (text === '##END##') {
     inDump = false;
+    // Exact record count now we have all bytes
+    const totalBytes = dumpChunksList.reduce((a, c) => a + c.length, 0);
+    dumpLineCount = Math.max(0, Math.floor((totalBytes - 4) / RECORD_SIZE));
     const elapsed = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
     document.getElementById('prog-bar').classList.add('done');
-    document.getElementById('prog-bar').style.width         = '100%';
-    document.getElementById('warn-transfer').style.display  = 'none';
+    document.getElementById('prog-bar').style.width        = '100%';
+    document.getElementById('warn-transfer').style.display = 'none';
     document.getElementById('btn-save-csv').disabled = false;
-    document.getElementById('btn-save-txt').disabled = false;
+    document.getElementById('btn-save-bin').disabled = false;
     document.getElementById('btn-dump').disabled     = false;
-    document.getElementById('btn-clear').disabled    = false; // re-enable after transfer
+    document.getElementById('btn-clear').disabled    = false;
     updateFileInfo(dumpRecvBytes, dumpLineCount);
-    log('✅ Transfer complete — ' + dumpLineCount.toLocaleString() + ' rows in ' + elapsed + 's');
-    if (isIOS) log('📱 Tap Save as CSV or Save as raw .txt to open the Share Sheet');
+    log('✅ Transfer complete — ' + dumpLineCount.toLocaleString() + ' records in ' + elapsed + 's');
+    if (isIOS) log('📱 Tap Save as CSV or Save raw .bin to open Share Sheet');
     return;
   }
 
-  if (raw.startsWith('##ERROR')) {
-    log('❌ ' + raw.replace(/##/g, ''));
+  if (text.startsWith('##ERROR')) {
+    log('❌ ' + text.replace(/##/g, ''));
     inDump = false;
     showProgress(false);
     document.getElementById('warn-transfer').style.display = 'none';
@@ -378,23 +416,166 @@ function onData(event) {
     return;
   }
 
-  if (raw.trim() === '##CLEARED##') {
-    log('🗑 data.txt wiped on SD card.');
+  if (text === '##CLEARED##') {
+    log('🗑 data.bin wiped on SD card.');
     updateFileInfo(0, 0);
-    dumpChunks = []; dumpLineCount = 0;
+    dumpChunksList = []; dumpLineCount = 0;
     document.getElementById('btn-save-csv').disabled = true;
-    document.getElementById('btn-save-txt').disabled = true;
+    document.getElementById('btn-save-bin').disabled = true;
     return;
   }
+}
 
-  if (inDump) {
-    dumpChunks.push(raw);
-    dumpRecvBytes += raw.length;
-    dumpLineBuffer += raw;
-    const lines = dumpLineBuffer.split('\n');
-    dumpLineBuffer = lines.pop();
-    dumpLineCount += lines.filter(l => l.trim().length > 0).length;
-    updateProgress();
+// ===================================================================
+// Binary chunk handler
+// ===================================================================
+function handleBinaryChunk(bytes) {
+  // Store a copy of this chunk
+  dumpChunksList.push(new Uint8Array(bytes));
+  dumpRecvBytes += bytes.length;
+
+  // Estimate record count from byte count (subtract 4-byte header)
+  dumpLineCount = Math.max(0, Math.floor((dumpRecvBytes - 4) / RECORD_SIZE));
+
+  updateProgress();
+}
+
+// ===================================================================
+// Binary parser — assembles all chunks and parses records
+// Returns array of CSV row arrays: [time, lat, lon, ax, ay, az, roll, pitch, yaw]
+// ===================================================================
+function parseBinaryToRows() {
+  // Assemble all received bytes in one pass (O(n) — avoids O(n²) repeated concat)
+  const totalLen = dumpChunksList.reduce((a, c) => a + c.length, 0);
+  const all      = new Uint8Array(totalLen);
+  let   pos      = 0;
+  for (const chunk of dumpChunksList) {
+    all.set(chunk, pos);
+    pos += chunk.length;
+  }
+
+  // Skip 4-byte file header if present
+  let offset = 0;
+  if (all.length >= 4 &&
+      all[0] === FILE_MAGIC[0] && all[1] === FILE_MAGIC[1] &&
+      all[2] === FILE_MAGIC[2] && all[3] === FILE_MAGIC[3]) {
+    offset = 4;
+  }
+
+  const rows = [];
+
+  while (offset + RECORD_SIZE <= all.length) {
+    // Validate sync byte
+    if (all[offset + OFF_SYNC] !== SYNC_BYTE) {
+      offset++; // lost sync — scan forward
+      continue;
+    }
+
+    // Copy record bytes into a fresh ArrayBuffer for DataView
+    // (avoids byteOffset issues when slicing Uint8Array views)
+    const buf = new ArrayBuffer(RECORD_SIZE);
+    new Uint8Array(buf).set(all.subarray(offset, offset + RECORD_SIZE));
+    const view = new DataView(buf);
+
+    const hour     = view.getUint8(OFF_HOUR);
+    const minute   = view.getUint8(OFF_MINUTE);
+    const second   = view.getUint8(OFF_SECOND);
+    const gpsValid = view.getUint8(OFF_GPS_VALID) === 1;
+    const lat_e6   = view.getInt32(OFF_LAT_E6,  true); // little-endian
+    const lon_e6   = view.getInt32(OFF_LON_E6,  true);
+    const accelX   = view.getFloat32(OFF_ACCEL_X, true);
+    const accelY   = view.getFloat32(OFF_ACCEL_Y, true);
+    const accelZ   = view.getFloat32(OFF_ACCEL_Z, true);
+    const roll     = view.getFloat32(OFF_ROLL,    true);
+    const pitch    = view.getFloat32(OFF_PITCH,   true);
+    const yaw      = view.getFloat32(OFF_YAW,     true);
+
+    // Format fields to match original Python CSV output precision
+    const time = pad2(hour) + ':' + pad2(minute) + ':' + pad2(second);
+    const lat  = gpsValid ? (lat_e6 / 1e6).toFixed(6) : '';
+    const lon  = gpsValid ? (lon_e6 / 1e6).toFixed(6) : '';
+
+    rows.push([
+      time,
+      lat, lon,
+      accelX.toFixed(4), accelY.toFixed(4), accelZ.toFixed(4),
+      roll.toFixed(2), pitch.toFixed(2), yaw.toFixed(2)
+    ]);
+
+    offset += RECORD_SIZE;
+  }
+
+  return rows;
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+// ===================================================================
+// Exports
+// ===================================================================
+function saveCSV() {
+  if (!dumpChunksList.length) { log('No data to save.'); return; }
+  log('Parsing binary data…');
+
+  const rows = parseBinaryToRows();
+  if (!rows.length) { log('❌ No valid records found — check data format'); return; }
+
+  const header = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n';
+  const csv    = header + rows.map(r => r.join(',')).join('\n');
+  const date   = new Date().toISOString().slice(0, 10);
+  download(csv, date + '.csv', 'text/csv');
+  log('💾 ' + rows.length.toLocaleString() + ' rows → ' +
+      (isIOS ? 'Share Sheet opened' : date + '.csv'));
+}
+
+function saveBIN() {
+  if (!dumpChunksList.length) { log('No data to save.'); return; }
+
+  // Assemble raw binary — same bytes that are on the SD card
+  const totalLen = dumpChunksList.reduce((a, c) => a + c.length, 0);
+  const all      = new Uint8Array(totalLen);
+  let pos = 0;
+  for (const chunk of dumpChunksList) { all.set(chunk, pos); pos += chunk.length; }
+
+  const date = new Date().toISOString().slice(0, 10);
+  download(all, date + '_data.bin', 'application/octet-stream');
+  log('📦 ' + fmtBytes(totalLen) + ' → ' +
+      (isIOS ? 'Share Sheet opened' : date + '_data.bin'));
+}
+
+// ===================================================================
+// Download — works on desktop AND iOS (Share Sheet)
+// ===================================================================
+function download(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url  = URL.createObjectURL(blob);
+
+  if (isIOS) {
+    // iOS blocks programmatic <a download> — use native share sheet
+    if (navigator.canShare &&
+        navigator.canShare({ files: [new File([blob], filename, { type: mime })] })) {
+      const file = new File([blob], filename, { type: mime });
+      navigator.share({ files: [file], title: filename })
+        .then(() => URL.revokeObjectURL(url))
+        .catch(err => {
+          if (err.name !== 'AbortError') {
+            window.open(url, '_blank');
+          } else {
+            URL.revokeObjectURL(url);
+          }
+        });
+    } else {
+      // Older iOS — open in new tab, user taps Share → Save to Files
+      window.open(url, '_blank');
+      log('📄 Tap the Share button in your browser toolbar → Save to Files');
+    }
+  } else {
+    // Desktop — standard programmatic download
+    const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 }
 
@@ -424,19 +605,16 @@ function setLogState(state) {
   document.getElementById('btn-pause').disabled = !connected || state !== 'LOGGING';
   document.getElementById('btn-stop').disabled  = !connected || state === 'OFF';
   document.getElementById('btn-dump').disabled  = !connected || inDump;
-  // Clear stays enabled regardless of log state — Arduino handles stopping if needed
-  if (connected && !inDump) {
-    document.getElementById('btn-clear').disabled = false;
-  }
+  if (connected && !inDump) document.getElementById('btn-clear').disabled = false;
 }
 
 // ===================================================================
-// Stop & Download
+// Stop & Download shortcut
 // ===================================================================
 async function stopAndDownload() {
   if (logState !== 'OFF') {
     await sendCmd('STOP');
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 1500)); // let ESP32 flush buffer
   }
   requestDump();
 }
@@ -469,85 +647,9 @@ function updateProgress() {
 function updateFileInfo(bytes, rows) {
   document.getElementById('info-size').textContent = bytes > 0 ? fmtBytes(bytes) : '—';
   document.getElementById('info-rows').textContent = rows  > 0 ? rows.toLocaleString() : '—';
-  const etaSec = bytes > 0 ? bytes / 1024 / 22 : 0;
+  // Estimate at ~40 KB/s (binary + 5ms interval, conservative)
+  const etaSec = bytes > 0 ? bytes / 1024 / 40 : 0;
   document.getElementById('info-eta').textContent  = etaSec > 0 ? '~' + fmtTime(etaSec) : '—';
-}
-
-// ===================================================================
-// Exports
-// ===================================================================
-function saveCSV() {
-  if (!dumpChunks.length) { log('No data to save.'); return; }
-  log('Converting to CSV…');
-  const header  = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n';
-  const allText = dumpChunks.join('');
-  const lines   = allText.split('\n');
-  const rows    = [];
-
-  for (const line of lines) {
-    const t = line.trim();
-    if (!t) continue;
-    const parts = t.split(' | ');
-    if (parts.length !== 6) continue;
-    try {
-      const time = parts[0].split(': ').slice(1).join(': ').trim();
-      let lat = '', lon = '';
-      if (!parts[1].includes('Invalid')) {
-        const gd = parts[1].split(': ').slice(1).join(': ').trim();
-        [lat, lon] = gd.split(',').map(s => s.trim());
-      }
-      const acc   = parts[2].split(': ')[1].split(',').map(s => s.trim());
-      const roll  = parts[3].split(': ')[1].trim();
-      const pitch = parts[4].split(': ')[1].trim();
-      const yaw   = parts[5].split(': ')[1].trim();
-      rows.push(time+','+lat+','+lon+','+acc[0]+','+acc[1]+','+acc[2]+','+roll+','+pitch+','+yaw);
-    } catch(e) { /* skip malformed */ }
-  }
-
-  if (!rows.length) { log('❌ No valid rows found — check data format'); return; }
-  const date = new Date().toISOString().slice(0, 10);
-  download(header + rows.join('\n'), date + '.csv', 'text/csv');
-  log('💾 ' + rows.length.toLocaleString() + ' rows ready — ' + (isIOS ? 'Share Sheet opened' : 'downloading ' + date + '.csv'));
-}
-
-function saveTXT() {
-  if (!dumpChunks.length) { log('No data to save.'); return; }
-  const txt  = dumpChunks.join('');
-  const date = new Date().toISOString().slice(0, 10);
-  download(txt, date + '_data.txt', 'text/plain');
-  log('📄 ' + fmtBytes(txt.length) + ' ready — ' + (isIOS ? 'Share Sheet opened' : 'downloading ' + date + '_data.txt'));
-}
-
-function download(content, filename, mime) {
-  const blob = new Blob([content], { type: mime });
-  const url  = URL.createObjectURL(blob);
-
-  if (isIOS) {
-    if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: mime })] })) {
-      const file = new File([blob], filename, { type: mime });
-      navigator.share({ files: [file], title: filename })
-        .then(() => URL.revokeObjectURL(url))
-        .catch(err => {
-          if (err.name !== 'AbortError') {
-            log('Share failed, opening in new tab instead');
-            window.open(url, '_blank');
-          } else {
-            URL.revokeObjectURL(url);
-          }
-        });
-    } else {
-      window.open(url, '_blank');
-      log('📄 Tap the Share button in your browser toolbar → Save to Files');
-    }
-  } else {
-    const a = Object.assign(document.createElement('a'), {
-      href: url, download: filename
-    });
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  }
 }
 
 // ===================================================================
@@ -575,10 +677,9 @@ async function requestDump() {
 
 async function clearSD() {
   if (!writeChar) return;
-  // Friendly warning — mentions that logging will also be stopped if running
   const msg = logState !== 'OFF'
-    ? 'Logging is currently active.\n\nThis will STOP logging and permanently delete ALL data in data.txt.\n\nContinue?'
-    : 'Permanently delete ALL data in data.txt on the SD card?\n\nMake sure you have saved your data first!';
+    ? 'Logging is currently active.\n\nThis will STOP logging and permanently delete ALL data in data.bin.\n\nContinue?'
+    : 'Permanently delete ALL data in data.bin on the SD card?\n\nMake sure you have saved your data first!';
   if (!confirm(msg)) return;
   try {
     await writeChar.writeValue(new TextEncoder().encode('CLEAR'));
@@ -602,7 +703,7 @@ function log(msg) {
 }
 
 function fmtBytes(b) {
-  if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB';
+  if (b >= 1048576) return (b / 1048576).toFixed(2) + ' MB';
   if (b >= 1024)    return (b / 1024).toFixed(1)    + ' KB';
   return b + ' B';
 }
