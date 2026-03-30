@@ -42,27 +42,17 @@
     background: var(--surface2); border-radius: 8px;
     padding: 10px 6px; text-align: center;
   }
-  .status-label {
-    font-size: 0.62rem; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px;
-  }
+  .status-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
   .status-dot {
     width: 12px; height: 12px; border-radius: 50%;
     background: var(--muted); margin: 0 auto 4px;
     transition: background 0.3s, box-shadow 0.3s;
   }
-  .status-dot.green  { background: var(--green);  box-shadow: 0 0 8px var(--green); }
-  .status-dot.orange { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
-  .status-dot.red    { background: var(--red);    box-shadow: 0 0 6px var(--red); }
-  /* Pulsing animation for "waiting" state */
-  .status-dot.waiting {
-    animation: pulse 1.4s ease-in-out infinite;
-    background: var(--muted);
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.3; }
-  }
+  .status-dot.green   { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+  .status-dot.orange  { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+  .status-dot.red     { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+  .status-dot.waiting { animation: pulse 1.4s ease-in-out infinite; background: var(--muted); }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
   .status-val { font-size: 0.68rem; font-weight: 600; }
 
   .info-row {
@@ -241,9 +231,9 @@ const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 // ===================================================================
 // Binary format constants — must match Arduino sketch exactly
 // ===================================================================
-const RECORD_SIZE  = 37;
-const SYNC_BYTE    = 0xAA;
-const FILE_MAGIC   = [0x45, 0x53, 0x50, 0x42]; // "ESPB"
+const RECORD_SIZE = 37;
+const SYNC_BYTE   = 0xAA;
+const FILE_MAGIC  = [0x45, 0x53, 0x50, 0x42]; // "ESPB"
 
 const OFF_SYNC      = 0;
 const OFF_HOUR      = 1;
@@ -265,14 +255,9 @@ const OFF_YAW       = 33;
 let device     = null;
 let notifyChar = null;
 let writeChar  = null;
+let logState   = 'OFF';
+let isConnected = false;
 
-// FIX: logState is now the single source of truth for button states.
-// It is set both from local optimistic updates (on sendCmd) AND from
-// confirmed ESP32 messages. This prevents buttons getting stuck.
-let logState      = 'OFF';
-let isConnected   = false;
-
-// Transfer state
 let inDump          = false;
 let dumpTotalBytes  = 0;
 let dumpRecvBytes   = 0;
@@ -309,7 +294,6 @@ async function connectBLE() {
 
     isConnected = true;
     setDot('ble', 'green', 'Connected');
-    // FIX: Show waiting animation on GPS/SD until first STATUS arrives
     setDot('gps', 'waiting', 'Waiting…');
     setDot('sd',  'waiting', 'Waiting…');
     log('✅ Connected to ' + device.name);
@@ -317,11 +301,6 @@ async function connectBLE() {
 
     document.getElementById('btn-connect').disabled    = true;
     document.getElementById('btn-disconnect').disabled = false;
-
-    // FIX: Enable ALL action buttons immediately on connect.
-    // We don't wait for a STATUS packet — the ESP32 sends one
-    // immediately on connect anyway, but buttons should never be
-    // stuck just because a packet was delayed.
     updateAllButtons();
 
   } catch (e) {
@@ -338,9 +317,9 @@ function onDisconnected() {
   log('⚠️ Disconnected.');
   isConnected = false;
   setDot('ble', 'red', 'Off');
-  setDot('log', '',        '—');
-  setDot('gps', '',        '—');
-  setDot('sd',  '',        '—');
+  setDot('log', '', '—');
+  setDot('gps', '', '—');
+  setDot('sd',  '', '—');
   document.getElementById('btn-connect').disabled    = false;
   document.getElementById('btn-disconnect').disabled = true;
   inDump   = false;
@@ -350,41 +329,45 @@ function onDisconnected() {
 }
 
 // ===================================================================
-// Master button update function
-// Called after ANY state change — single place, no inconsistencies.
+// Master button update — single source of truth
 // ===================================================================
 function updateAllButtons() {
   const c = isConnected;
   const d = inDump;
-
-  // Logging control
-  // FIX: Stop and Pause are enabled whenever logging is not OFF,
-  // regardless of whether a STATUS has arrived. This prevents them
-  // getting stuck disabled when SD issues prevent STATUS packets.
-  document.getElementById('btn-start').disabled    = !c || d || logState === 'LOGGING';
-  document.getElementById('btn-pause').disabled    = !c || d || logState !== 'LOGGING';
-  document.getElementById('btn-stop').disabled     = !c || d || logState === 'OFF';
-
-  // Transfer
-  document.getElementById('btn-stop-dl').disabled  = !c || d;
-  document.getElementById('btn-dump').disabled      = !c || d;
-  document.getElementById('btn-clear').disabled     = !c || d;
+  document.getElementById('btn-start').disabled   = !c || d || logState === 'LOGGING';
+  document.getElementById('btn-pause').disabled   = !c || d || logState !== 'LOGGING';
+  document.getElementById('btn-stop').disabled    = !c || d || logState === 'OFF';
+  document.getElementById('btn-stop-dl').disabled = !c || d;
+  document.getElementById('btn-dump').disabled    = !c || d;
+  document.getElementById('btn-clear').disabled   = !c || d;
 }
 
 // ===================================================================
 // Incoming data handler
+//
+// FIX: Previous version routed by first byte where '#' (0x23) = ASCII
+// and anything else = binary. This was wrong — STATUS packets begin
+// with 'S' (0x53), not '#', so they were silently discarded as binary.
+//
+// Correct routing logic:
+//   - During a dump, binary record packets have first byte 0xAA (SYNC)
+//     or 0x45 ('E', start of ESPB file header). These are binary.
+//   - Everything else is an ASCII control message and must be decoded
+//     as text regardless of whether a dump is in progress.
 // ===================================================================
 function onData(event) {
   const dv    = event.target.value;
   const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+  const first = bytes[0];
 
-  // Route by first byte:
-  //   0x23 = '#' → ASCII control message
-  //   otherwise  → binary data (during dump)
-  if (bytes[0] === 0x23) {
-    handleControlMessage(new TextDecoder().decode(dv).trim());
-  } else if (inDump) {
+  // Binary data only if we're in a dump AND first byte is SYNC (0xAA)
+  // or the ESPB file header magic ('E' = 0x45)
+  if (inDump && (first === SYNC_BYTE || first === FILE_MAGIC[0])) {
     handleBinaryChunk(bytes);
+  } else {
+    // Everything else — including STATUS, ##START##, ##END##, ##LOG_*##
+    // — is ASCII text. Decode and handle regardless of dump state.
+    handleControlMessage(new TextDecoder().decode(dv).trim());
   }
 }
 
@@ -393,24 +376,21 @@ function onData(event) {
 // ===================================================================
 function handleControlMessage(text) {
 
-  // STATUS,LOGGING|PAUSED|OFF,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,fileBytes,rowsLogged
+  // STATUS,LOGGING|PAUSED|OFF,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,bytes,rows
   if (text.startsWith('STATUS,')) {
     const p     = text.split(',');
-    const state = p[1];  // LOGGING | PAUSED | OFF
+    const state = p[1];
     const gpsOk = p[2] === 'GPS_OK';
     const sdOk  = p[3] === 'SD_OK';
     const bytes = parseInt(p[4]) || 0;
     const rows  = parseInt(p[5]) || 0;
 
-    // FIX: Only update logState from STATUS if it differs — avoids
-    // overwriting a local optimistic update with a stale STATUS.
     if (state !== logState) {
       logState = state;
       updateAllButtons();
       updateLogBanner();
     }
 
-    // GPS and SD are always updated from STATUS — these have no local state
     setDot('gps', gpsOk ? 'green' : 'orange', gpsOk ? 'Fix' : 'No fix');
     setDot('sd',  sdOk  ? 'green' : 'red',    sdOk  ? 'OK'  : 'Failed');
 
@@ -418,27 +398,20 @@ function handleControlMessage(text) {
     return;
   }
 
-  // Logging confirmations — these are the authoritative state from the ESP32
   if (text === '##LOG_STARTED##') {
     logState = 'LOGGING';
     log('▶ Logging started');
-    updateAllButtons();
-    updateLogBanner();
-    return;
+    updateAllButtons(); updateLogBanner(); return;
   }
   if (text === '##LOG_PAUSED##') {
     logState = 'PAUSED';
     log('⏸ Logging paused');
-    updateAllButtons();
-    updateLogBanner();
-    return;
+    updateAllButtons(); updateLogBanner(); return;
   }
   if (text === '##LOG_STOPPED##') {
     logState = 'OFF';
     log('⏹ Logging stopped');
-    updateAllButtons();
-    updateLogBanner();
-    return;
+    updateAllButtons(); updateLogBanner(); return;
   }
 
   // Dump start: ##START,<totalBytes>,BIN##
@@ -458,15 +431,14 @@ function handleControlMessage(text) {
     return;
   }
 
-  // Dump end
   if (text === '##END##') {
     inDump = false;
-    const totalBytes  = dumpChunksList.reduce((a, c) => a + c.length, 0);
-    dumpLineCount     = Math.max(0, Math.floor((totalBytes - 4) / RECORD_SIZE));
-    const elapsed     = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
+    const totalBytes = dumpChunksList.reduce((a, c) => a + c.length, 0);
+    dumpLineCount    = Math.max(0, Math.floor((totalBytes - 4) / RECORD_SIZE));
+    const elapsed    = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
     document.getElementById('prog-bar').classList.add('done');
-    document.getElementById('prog-bar').style.width         = '100%';
-    document.getElementById('warn-transfer').style.display  = 'none';
+    document.getElementById('prog-bar').style.width        = '100%';
+    document.getElementById('warn-transfer').style.display = 'none';
     document.getElementById('btn-save-csv').disabled = false;
     document.getElementById('btn-save-bin').disabled = false;
     updateAllButtons();
@@ -514,7 +486,6 @@ function parseBinaryToRows() {
   let   pos      = 0;
   for (const chunk of dumpChunksList) { all.set(chunk, pos); pos += chunk.length; }
 
-  // Skip 4-byte ESPB header if present
   let offset = 0;
   if (all.length >= 4 &&
       all[0] === FILE_MAGIC[0] && all[1] === FILE_MAGIC[1] &&
@@ -543,12 +514,10 @@ function parseBinaryToRows() {
     const pitch    = view.getFloat32(OFF_PITCH,   true);
     const yaw      = view.getFloat32(OFF_YAW,     true);
 
-    const time = pad2(hour) + ':' + pad2(minute) + ':' + pad2(second);
-    const lat  = gpsValid ? (lat_e6 / 1e6).toFixed(6) : '';
-    const lon  = gpsValid ? (lon_e6 / 1e6).toFixed(6) : '';
-
     rows.push([
-      time, lat, lon,
+      pad2(hour) + ':' + pad2(minute) + ':' + pad2(second),
+      gpsValid ? (lat_e6 / 1e6).toFixed(6) : '',
+      gpsValid ? (lon_e6 / 1e6).toFixed(6) : '',
       accelX.toFixed(4), accelY.toFixed(4), accelZ.toFixed(4),
       roll.toFixed(2), pitch.toFixed(2), yaw.toFixed(2)
     ]);
@@ -561,12 +530,12 @@ function parseBinaryToRows() {
 function pad2(n) { return String(n).padStart(2, '0'); }
 
 // ===================================================================
-// Logging state UI helpers
+// Logging state UI
 // ===================================================================
 function updateLogBanner() {
   const banner = document.getElementById('state-banner');
   if (logState === 'LOGGING') {
-    setDot('log', 'green', 'Logging');
+    setDot('log', 'green',  'Logging');
     banner.className   = 'state-banner logging';
     banner.textContent = '● Logging is ACTIVE';
   } else if (logState === 'PAUSED') {
@@ -574,7 +543,7 @@ function updateLogBanner() {
     banner.className   = 'state-banner paused';
     banner.textContent = '⏸ Logging is PAUSED';
   } else {
-    setDot('log', 'red', 'Off');
+    setDot('log', 'red',    'Off');
     banner.className   = 'state-banner off';
     banner.textContent = '● Logging is OFF';
   }
@@ -588,9 +557,9 @@ function saveCSV() {
   log('Parsing binary data…');
   const rows = parseBinaryToRows();
   if (!rows.length) { log('❌ No valid records found'); return; }
-  const header = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n';
-  const csv    = header + rows.map(r => r.join(',')).join('\n');
-  const date   = new Date().toISOString().slice(0, 10);
+  const csv  = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n' +
+                rows.map(r => r.join(',')).join('\n');
+  const date = new Date().toISOString().slice(0, 10);
   download(csv, date + '.csv', 'text/csv');
   log('💾 ' + rows.length.toLocaleString() + ' rows → ' +
       (isIOS ? 'Share Sheet opened' : date + '.csv'));
@@ -640,27 +609,20 @@ function download(content, filename, mime) {
 async function sendCmd(cmd) {
   if (!writeChar) return;
   try {
-    // FIX: Optimistic local state update so buttons respond instantly —
-    // the ESP32 confirmation message will follow within ~100ms and will
-    // match, so there's no flicker or inconsistency.
+    // Optimistic local update for instant UI response
     if      (cmd === 'START') { logState = 'LOGGING'; }
     else if (cmd === 'PAUSE') { logState = 'PAUSED';  }
     else if (cmd === 'STOP')  { logState = 'OFF';     }
     updateAllButtons();
     updateLogBanner();
-
     await writeChar.writeValue(new TextEncoder().encode(cmd));
     log('📤 ' + cmd + ' sent');
-  } catch (e) {
-    log('❌ ' + e.message);
-    // If send failed, revert — next STATUS packet will correct state
-  }
+  } catch (e) { log('❌ ' + e.message); }
 }
 
 async function requestDump() {
   if (!writeChar) return;
   try {
-    updateAllButtons();
     await writeChar.writeValue(new TextEncoder().encode('DUMP'));
     log('📤 DUMP command sent…');
   } catch (e) {
@@ -738,7 +700,7 @@ function log(msg) {
 
 function fmtBytes(b) {
   if (b >= 1048576) return (b / 1048576).toFixed(2) + ' MB';
-  if (b >= 1024)    return (b / 1024).toFixed(1)    + ' KB';
+  if (b >= 1024)    return (b / 1024).toFixed(1) + ' KB';
   return b + ' B';
 }
 
