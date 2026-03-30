@@ -1,284 +1,511 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conor Egan | Product Design Portfolio</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            scroll-behavior: smooth;
-        }
-        .section-padding {
-            padding: 8rem 1rem;
-        }
-        @media (min-width: 768px) {
-            .section-padding {
-                padding: 8rem 2rem;
-            }
-        }
-        /* For styling the code block */
-        pre {
-            background-color: #1f2937; /* gray-800 */
-            color: #d1d5db; /* gray-300 */
-            padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            font-size: 0.875rem;
-        }
-        /* Subtle hover effect for nav links */
-        nav a {
-            transition: all 0.2s ease-in-out;
-        }
-        nav a:hover {
-            transform: translateY(-2px);
-            color: #111827; /* gray-900 */
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32 Sensor Logger</title>
+<style>
+  :root {
+    --bg:       #0f1117;
+    --surface:  #1a1d27;
+    --surface2: #22263a;
+    --border:   #2e3347;
+    --accent:   #4f8ef7;
+    --green:    #34d399;
+    --orange:   #f59e0b;
+    --red:      #f87171;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --mono:     'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px; line-height: 1.6; padding: 16px;
+  }
+  h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 2px; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 0.8rem; margin-bottom: 18px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+  }
+
+  /* Status indicators */
+  .status-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .status-cell {
+    background: var(--surface2); border-radius: 8px;
+    padding: 10px 8px; text-align: center;
+  }
+  .status-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .status-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--muted); margin: 0 auto 4px;
+    transition: background 0.3s;
+  }
+  .status-dot.green  { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+  .status-dot.orange { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+  .status-dot.red    { background: var(--red); }
+  .status-val { font-size: 0.72rem; font-weight: 600; }
+
+  /* File info */
+  .info-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { color: var(--muted); }
+  .info-val { font-family: var(--mono); font-weight: 600; color: var(--accent); }
+
+  /* Buttons */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px 16px; border: none; border-radius: 10px;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+  .btn + .btn { margin-top: 8px; }
+  .btn-primary  { background: var(--accent);  color: #fff; }
+  .btn-secondary{ background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-success  { background: var(--green);   color: #0a2a1e; }
+  .btn-warn     { background: #2a1f0a;        color: var(--orange); border: 1px solid #5a3a00; }
+  .btn-danger   { background: #3d1f1f;        color: var(--red);    border: 1px solid #5a2a2a; }
+
+  /* Progress */
+  .progress-wrap {
+    background: var(--surface2); border-radius: 6px;
+    height: 10px; overflow: hidden; margin: 10px 0 4px;
+  }
+  .progress-bar {
+    height: 100%; background: var(--accent);
+    border-radius: 6px; width: 0%;
+    transition: width 0.4s ease;
+  }
+  .progress-bar.done { background: var(--green); }
+  .progress-stats {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 6px; margin-top: 8px;
+  }
+  .pstat {
+    background: var(--surface2); border-radius: 6px;
+    padding: 6px 8px; text-align: center;
+  }
+  .pstat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .pstat-val { font-family: var(--mono); font-size: 0.82rem; font-weight: 600; color: var(--text); margin-top: 2px; }
+
+  /* Log */
+  #log {
+    font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+    background: var(--surface2); border-radius: 8px; padding: 10px;
+    height: 140px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+  }
+
+  .warn-box {
+    background: #2a1f0a; border: 1px solid #5a3a00; border-radius: 8px;
+    padding: 10px 12px; font-size: 0.8rem; color: var(--orange);
+    margin-bottom: 10px; line-height: 1.5;
+  }
+</style>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased">
+<body>
 
-    <!-- Header & Navigation -->
-    <header class="bg-white/80 backdrop-blur-lg fixed top-0 left-0 right-0 z-10 border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex-shrink-0">
-                    <a href="#hero" class="text-lg font-bold text-gray-900">Conor Egan</a>
-                </div>
-                <nav class="hidden md:flex md:space-x-8">
-                    <a href="#projects" class="text-gray-600">Projects</a>
-                    <a href="#about" class="text-gray-600">About</a>
-                    <a href="#contact" class="text-gray-600">Contact</a>
-                </nav>
-            </div>
-        </div>
-    </header>
+<h1>ESP32 <span>Sensor Logger</span></h1>
+<p class="sub">Open in Edge or Chrome on Windows/Mac/Android &nbsp;·&nbsp; Web Bluetooth required</p>
 
-    <!-- Hero Section -->
-    <section id="hero" class="min-h-screen flex items-center bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="max-w-3xl mx-auto">
-                <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight">Engineering-Led Product Design</h1>
-                <p class="mt-6 text-lg md:text-xl text-gray-600">
-                    Bridging the gap between complex hardware and intuitive software experiences.
-                </p>
-                <div class="mt-8 flex justify-center space-x-4">
-                     <a href="mailto:conoregan.london@gmail.com" class="bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition shadow-md">Get in Touch</a>
-                     <a href="#projects" class="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-md border border-gray-300">View My Work</a>
-                </div>
-            </div>
-        </div>
-    </section>
+<!-- ── Status ─────────────────────────────── -->
+<div class="card">
+  <div class="card-title">System Status</div>
+  <div class="status-grid">
+    <div class="status-cell">
+      <div class="status-label">Bluetooth</div>
+      <div class="status-dot" id="dot-ble"></div>
+      <div class="status-val" id="val-ble">Off</div>
+    </div>
+    <div class="status-cell">
+      <div class="status-label">GPS</div>
+      <div class="status-dot" id="dot-gps"></div>
+      <div class="status-val" id="val-gps">—</div>
+    </div>
+    <div class="status-cell">
+      <div class="status-label">SD Card</div>
+      <div class="status-dot" id="dot-sd"></div>
+      <div class="status-val" id="val-sd">—</div>
+    </div>
+  </div>
+  <div style="margin-top:10px; display:flex; gap:8px;">
+    <button class="btn btn-primary" id="btn-connect" onclick="connectBLE()" style="flex:1">🔵 Connect</button>
+    <button class="btn btn-secondary" id="btn-disconnect" onclick="disconnectBLE()" disabled style="flex:1">Disconnect</button>
+  </div>
+</div>
 
-    <!-- Introduction Section -->
-    <section id="intro" class="section-padding bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 items-center">
-                <div class="md-col-span-1">
-                    <img src="images/your-photo.jpg" alt="Conor Egan" class="rounded-lg shadow-xl w-full">
-                </div>
-                <div class="md-col-span-2">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Hello! I'm Conor.</h2>
-                    <p class="text-lg text-gray-600 space-y-4">
-                        <span>I'm a final-year MEng Engineering Design student at the University of Bristol.</span>
-                        <br><br>
-                        <span>My passion lies at the intersection of complex engineering and user-centric design. I enjoy diving into deep technical challenges to understand user pain points, then building software tools that make their work more intuitive and efficient. This portfolio showcases two projects where I have applied this approach.</span>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
+<!-- ── File Info ───────────────────────────── -->
+<div class="card">
+  <div class="card-title">data.txt on SD Card</div>
+  <div class="info-row"><span class="info-key">File size</span><span class="info-val" id="info-size">—</span></div>
+  <div class="info-row"><span class="info-key">~Rows (250 Hz)</span><span class="info-val" id="info-rows">—</span></div>
+  <div class="info-row"><span class="info-key">~Est. transfer time</span><span class="info-val" id="info-eta">—</span></div>
+</div>
 
-    <!-- Projects Section -->
-    <section id="projects" class="section-padding bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl font-extrabold text-gray-900">My Work</h2>
-                <p class="mt-4 text-lg text-gray-600">A selection of projects that showcase my end-to-end design process.</p>
-            </div>
+<!-- ── Transfer ────────────────────────────── -->
+<div class="card">
+  <div class="card-title">Transfer &amp; Export</div>
 
-            <!-- Project 1: EAV Health Monitoring System -->
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-16 p-8 md:p-12">
-                <div class="mb-8">
-                    <h3 class="text-3xl font-bold text-gray-900">Project 1: EAV Health & Performance Monitoring System</h3>
-                    <p class="mt-2 text-xl text-gray-600">Delivering Actionable Fleet Insights with a Custom Full-Stack IoT System</p>
-                </div>
+  <div class="warn-box" id="warn-logging" style="display:none">
+    ⚠️ SD logging is <strong>paused</strong> while transferring.
+    Trigger this at the end of a session for best results.
+  </div>
 
-                <div class="space-y-12">
-                    <!-- The Challenge -->
-                    <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge & Academic Context</h4>
-                        <p class="text-gray-700 mb-4">As my major individual research project for my MEng degree, I collaborated with EAV Ltd. to design a high-quality system to monitor the health, performance, and safety of their next-generation e-bike taxi. This work forms the foundation for my final-year group design project, where a team of seven will deliver a complete vehicle design.</p>
-                        <p class="text-gray-700">The core challenge was to design a cost-effective system to provide fleet managers with actionable insights into vehicle performance, payload, and safety, without requiring expensive new mechanical components.</p>
-                    </div>
+  <div class="progress-wrap" id="prog-wrap" style="display:none">
+    <div class="progress-bar" id="prog-bar"></div>
+  </div>
+  <div class="progress-stats" id="prog-stats" style="display:none">
+    <div class="pstat"><div class="pstat-label">Received</div><div class="pstat-val" id="ps-recv">—</div></div>
+    <div class="pstat"><div class="pstat-label">Rows</div>    <div class="pstat-val" id="ps-rows">—</div></div>
+    <div class="pstat"><div class="pstat-label">ETA</div>     <div class="pstat-val" id="ps-eta">—</div></div>
+  </div>
 
-                    <!-- The Solution -->
-                    <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">My Solution: A Full-Stack Approach</h4>
-                         <p class="text-gray-700 mb-6">I designed and developed a complete end-to-end system, covering the full stack from custom hardware and embedded firmware to a suite of Python-based analysis tools.</p>
-                        <figure class="mb-6 max-w-2xl mx-auto">
-                           <img src="images/eav-hardware-setup.png" alt="The custom-built hardware data logger for the EAV project" class="rounded-lg shadow-md w-full">
-                           <figcaption class="text-center mt-2 text-sm text-gray-500">The custom-built hardware data logger, combining an ESP32, GPS, and MPU6050 IMU on a breadboard for prototyping.</figcaption>
-                       </figure>
-                        <ul class="list-disc list-inside text-gray-700 mt-4 space-y-2 mb-6">
-                            <li><strong>Embedded C++ Firmware:</strong> I developed robust firmware for the ESP32 microcontroller that performs on-board sensor fusion using a Kalman filter for accurate orientation tracking and logs all data reliably to an SD card.</li>
-                            <li><strong>Python Analysis Suite:</strong> I wrote a collection of Python scripts to automatically parse, process, and analyse the raw data, providing valuable insights for fleet managers.</li>
-                        </ul>
-                    </div>
+  <button class="btn btn-secondary" id="btn-dump"     onclick="requestDump()" disabled style="margin-top:10px">
+    📥 &nbsp;Download data.txt from SD card
+  </button>
+  <button class="btn btn-success"   id="btn-save-csv" onclick="saveCSV()"     disabled>
+    💾 &nbsp;Save as CSV (for Python script)
+  </button>
+  <button class="btn btn-warn"      id="btn-save-txt" onclick="saveTXT()"     disabled>
+    📄 &nbsp;Save as raw .txt (original format)
+  </button>
+  <button class="btn btn-danger"    id="btn-clear"    onclick="clearSD()"     disabled>
+    🗑 &nbsp;Wipe data.txt on SD card
+  </button>
+</div>
 
-                    <!-- Key Features & Technical Implementation -->
-                    <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Core Analytical Features</h4>
-                        <p class="text-gray-700 mb-8">The system transforms raw sensor data into high-level insights. The two flagship features of the analysis suite are a mass estimation model and a crash detection algorithm, both designed to give fleet managers crucial data without requiring additional mechanical sensors.</p>
-                        
-                        <!-- Feature 1: Mass Estimation -->
-                        <div class="mb-12">
-                            <h5 class="text-xl font-bold text-gray-800">Feature 1: Mass Estimation for Payload Monitoring</h5>
-                            <p class="text-gray-700 mt-2 mb-6">This model calculates the total vehicle payload with a 6-7% margin of error, validated against real-world test data. This allows EAV to monitor how the vehicle is being used and optimise battery performance based on load, a critical factor for operational efficiency.</p>
-                            <figure class="max-w-2xl mx-auto">
-                               <img src="images/eav-mass-estimation-results.png" alt="Graph showing the results of the mass estimation algorithm against actual test weights" class="rounded-lg shadow-md w-full">
-                               <figcaption class="text-center mt-2 text-sm text-gray-500">Validation results for the mass estimation algorithm, comparing calculated results (grey bars) against actual vehicle weight (yellow bars) for different cargo loads.</figcaption>
-                           </figure>
-                        </div>
-                        
-                        <!-- Feature 2: Crash Detection -->
-                        <div>
-                             <h5 class="text-xl font-bold text-gray-800">Feature 2: Crash Detection for Safety & Maintenance</h5>
-                            <p class="text-gray-700 mt-2 mb-6">By processing normalised accelerometer data, the system automatically logs and classifies impacts as 'small' or 'large' events. This provides critical data for safety analysis and allows fleet managers to proactively flag vehicles that may require inspection after a significant impact, preventing minor issues from becoming major failures.</p>
-                             <figure class="max-w-2xl mx-auto">
-                               <img src="images/eav-crash-detection-results.png" alt="Graph showing the crash detection algorithm identifying simulated impacts" class="rounded-lg shadow-md w-full">
-                               <figcaption class="text-center mt-2 text-sm text-gray-500">The crash detection algorithm successfully identifying and classifying a series of simulated impacts of increasing force.</figcaption>
-                           </figure>
-                        </div>
-                    </div>
-                    
-                    <!-- Code Snippet -->
-                    <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 mt-12 border-l-4 border-gray-900 pl-4">Behind the Analysis: A Code Snippet</h4>
-                        <p class="text-gray-700 mb-4">A critical step in the analysis is normalising the accelerometer data to remove the effects of gravity, which requires transforming the gravity vector into the sensor's local reference frame using 3D rotation matrices. This Python function demonstrates how that was achieved.</p>
-                        <pre><code>def normalize_acceleration(df):
-    roll = np.radians(df['Roll'].values)
-    pitch = np.radians(df['Pitch'].values)
-    yaw = np.radians(df['Yaw'].values)
-    
-    # Global gravity vector
-    gravity_global = np.array([0, 0, 9.81])
-    
-    # Prepare arrays for normalized values
-    accel_normalized_vectors = np.zeros((len(roll), 3))
+<!-- ── Activity Log ───────────────────────── -->
+<div class="card">
+  <div class="card-title">Activity Log</div>
+  <div id="log"></div>
+</div>
 
-    for i in range(len(roll)):
-        # Create rotation matrices for each axis
-        R_x = np.array([[1, 0, 0], [0, np.cos(roll[i]), -np.sin(roll[i])], [0, np.sin(roll[i]), np.cos(roll[i])]])
-        R_y = np.array([[np.cos(pitch[i]), 0, np.sin(pitch[i])], [0, 1, 0], [-np.sin(pitch[i]), 0, np.cos(pitch[i])]])
-        R_z = np.array([[np.cos(yaw[i]), -np.sin(yaw[i]), 0], [np.sin(yaw[i]), np.cos(yaw[i]), 0], [0, 0, 1]])
-        
-        # Combined rotation matrix
-        R = R_z @ R_y @ R_x
-        
-        # Transform global gravity to sensor's local frame
-        gravity_local = R.T @ gravity_global
-        
-        # Get raw acceleration and subtract local gravity
-        accel_local = np.array([df['x-axis'].iloc[i], df['y-axis'].iloc[i], df['z-axis'].iloc[i]])
-        accel_normalized = accel_local - gravity_local
-        accel_normalized_vectors[i] = accel_normalized
+<script>
+// ===================================================================
+// UUIDs — must match Arduino sketch exactly
+// ===================================================================
+const SERVICE_UUID     = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 
-    df[['x-axis_norm', 'y-axis_norm', 'z-axis_norm']] = accel_normalized_vectors
-    return df</code></pre>
-                    </div>
-                </div>
-            </div>
+// ===================================================================
+// State
+// ===================================================================
+let device     = null;
+let notifyChar = null;
+let writeChar  = null;
 
-            <!-- Project 2: Airborne UK -->
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden p-8 md:p-12">
-                <div class="mb-8">
-                   <h3 class="text-3xl font-bold text-gray-900">Project 2: Designing for Engineers at Airborne UK</h3>
-                   <p class="mt-2 text-xl text-gray-600">Boosting Engineering Efficiency with Custom-Built Automation & QC Tools</p>
-               </div>
-               <div class="space-y-12">
-                    <div>
-                       <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">The Challenge</h4>
-                       <p class="text-gray-700 mb-6">During my year in industry, I was tasked with transforming two early-stage internal projects into robust, user-friendly tools that would improve the efficiency of the engineering and quality control teams. As this work was proprietary and covered by a confidentiality agreement, I cannot share the source code or final user interfaces. However, the visuals shown below are from my university report and illustrate the key design processes and technical challenges I solved.</p>
-                   </div>
-                   
-                   <!-- Solution 1: Monitoring Dashboard -->
-                   <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Solution 1: The Real-Time Monitoring Dashboard</h4>
-                        <p class="text-gray-700 mb-2"><span class="font-semibold">Problem:</span> Engineers had no centralised way to monitor factory conditions, forcing them to react to issues rather than prevent them.</p>
-                        <p class="text-gray-700 mb-6"><span class="font-semibold">Solution:</span> I designed and built a real-time dashboard to give engineers an at-a-glance view of 12 critical data types, from temperature and humidity to machine vibration, using a network of RS485 sensors housed in a custom 3D-printed enclosure.</p>
-                        <figure class="mb-6 max-w-2xl mx-auto">
-                           <img src="images/airborne-graphs.png" alt="Example of the updated dashboard graphs showing dynamic thresholds" class="rounded-lg shadow-md w-full">
-                           <figcaption class="text-center mt-2 text-sm text-gray-500">The developed user interface, showing dummy data crossing a user-set threshold, triggering a visual alert by changing the line colour to red.</figcaption>
-                       </figure>
-                       
-                       <p class="text-gray-700 font-semibold">Process Rigour - Hardware Validation:</p>
-                       <p class="text-gray-700 my-2">To ensure the data was trustworthy, I designed and 3D printed custom jigs in SolidWorks to systematically test and validate the roll, pitch, yaw, and acceleration data from the IMU sensors. This process of rigorous validation was crucial for gaining the engineering team's confidence in the tool.</p>
-                        <figure class="mb-6 max-w-sm mx-auto">
-                           <img src="images/airborne-jig.png" alt="3D printed jig used to validate sensor data" class="rounded-lg shadow-md w-full">
-                           <figcaption class="text-center mt-2 text-sm text-gray-500">One of the custom jigs designed in SolidWorks and 3D printed to validate IMU sensor accuracy.</figcaption>
-                       </figure>
-                   </div>
+// Transfer state
+let inDump         = false;
+let dumpTotalBytes = 0;
+let dumpRecvBytes  = 0;
+let dumpChunks     = [];   // raw string chunks for txt export
+let dumpLineCount  = 0;    // running count of parsed lines
+let dumpLineBuffer = '';   // partial line accumulator
+let dumpStartTime  = 0;
+let dumpSpeedSmooth = 0;   // smoothed KB/s
 
-                   <!-- Solution 2: Computer Vision Tool -->
-                   <div>
-                        <h4 class="text-2xl font-semibold text-gray-900 mb-4 border-l-4 border-gray-900 pl-4">Solution 2: The Automated QC Tool</h4>
-                        <p class="text-gray-700 mb-2"><span class="font-semibold">Problem:</span> The manual quality control process for composite parts was slow and prone to human error, creating a bottleneck in the production line.</p>
-                        <p class="text-gray-700 mb-6"><span class="font-semibold">Solution:</span> I developed a computer vision tool that allowed QC technicians to automatically verify part geometry against a defined tolerance.</p>
-                        
-                        <p class="text-gray-700 font-semibold">Key Technical Challenge - Solving Image Distortion:</p>
-                        <p class="text-gray-700 my-2">A major obstacle was that the camera lens warped and distorted the images, making accurate measurement impossible. I researched and implemented a camera calibration routine in Python that mathematically undistorted the images, ensuring the geometric analysis was precise and reliable. This was a critical step that unblocked the entire project.</p>
-                         <figure class="mb-6 max-w-2xl mx-auto">
-                           <img src="images/airborne-distortion-vectors.png" alt="Data visualisation showing the vector field used to undistort camera images" class="rounded-lg shadow-md w-full">
-                           <figcaption class="text-center mt-2 text-sm text-gray-500">A data visualisation showing the calculated vector field required to correct for camera lens distortion.</figcaption>
-                       </figure>
+// ===================================================================
+// BLE Connection
+// ===================================================================
+async function connectBLE() {
+  if (!navigator.bluetooth) {
+    log('❌ Web Bluetooth not available. Use Edge or Chrome.');
+    return;
+  }
+  try {
+    log('Scanning for ESP32_Sensor…');
+    setDot('ble', 'orange', 'Scanning');
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'ESP32_Sensor' }],
+      optionalServices: [SERVICE_UUID]
+    });
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+    const server  = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    notifyChar = await service.getCharacteristic(NOTIFY_CHAR_UUID);
+    writeChar  = await service.getCharacteristic(WRITE_CHAR_UUID);
+    await notifyChar.startNotifications();
+    notifyChar.addEventListener('characteristicvaluechanged', onData);
+    setDot('ble', 'green', 'Connected');
+    log('✅ Connected to ' + device.name);
+    document.getElementById('btn-connect').disabled    = true;
+    document.getElementById('btn-disconnect').disabled = false;
+    document.getElementById('btn-dump').disabled       = false;
+  } catch (e) {
+    log('❌ ' + e.message);
+    setDot('ble', 'red', 'Failed');
+  }
+}
 
-                        <p class="text-gray-700 font-semibold mt-4">Impact:</p>
-                        <p class="text-gray-700 my-2">These tools significantly improved the workflows for both the engineering and QC teams. I had the opportunity to present the progress and positive impact of these projects at quarterly review meetings to company stakeholders and external funders, which further developed my technical communication skills.</p>
-                   </div>
-               </div>
-           </div>
-        </div>
-    </section>
+function disconnectBLE() {
+  if (device && device.gatt.connected) device.gatt.disconnect();
+}
 
-    <!-- About Me Section -->
-    <section id="about" class="section-padding bg-white">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">A Little More About Me</h2>
-            <div class="text-lg text-gray-600 space-y-4">
-                <p>
-                    I'm driven by a curiosity for how things work, which is what led me to engineering. I enjoy the process of breaking down a complex problem into its core components and building a solution from the ground up, whether that's a piece of hardware or a software tool.
-                </p>
-                <p>
-                    Outside of academia, I've honed my leadership and teamwork skills through a long-standing commitment to university water polo. I have held several committee positions, including 2nd Team Captain (2022-2023) and Alumni & Sponsorship Secretary (2024-2025). These roles have been invaluable for developing my skills in communication, organisation, and project management in a collaborative, high-pressure environment.
-                </p>
-            </div>
-        </div>
-    </section>
+function onDisconnected() {
+  log('⚠️ Disconnected.');
+  setDot('ble', 'red', 'Off');
+  setDot('gps', '', '—');
+  setDot('sd',  '', '—');
+  document.getElementById('btn-connect').disabled    = false;
+  document.getElementById('btn-disconnect').disabled = true;
+  document.getElementById('btn-dump').disabled       = true;
+  inDump = false;
+  document.getElementById('warn-logging').style.display = 'none';
+}
 
-    <!-- Contact Section -->
-    <footer id="contact" class="bg-gray-900 text-white section-padding">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-3xl font-bold">Let's Connect</h2>
-            <p class="mt-4 text-lg text-gray-300 max-w-2xl mx-auto">
-                Thank you for taking the time to review my work. I am passionate about using my engineering background to design and build better tools, and I would be thrilled to discuss how I could contribute to your team.
-            </p>
-             <div class="mt-8 flex justify-center space-x-6">
-                <a href="mailto:conoregan.london@gmail.com" class="text-gray-300 hover:text-white transition">conoregan.london@gmail.com</a>
-                <span>&middot;</span>
-                <a href="https://www.linkedin.com/in/conor-egan-b34264237" target="_blank" class="text-gray-300 hover:text-white transition">LinkedIn</a>
-            </div>
-            <div class="mt-8 text-sm text-gray-500">
-                <p>&copy; 2025 Conor Egan. All Rights Reserved.</p>
-            </div>
-        </div>
-    </footer>
+// ===================================================================
+// Incoming data handler
+// ===================================================================
+function onData(event) {
+  const raw = new TextDecoder().decode(event.target.value);
 
+  // --- STATUS packet ---
+  // FORMAT: STATUS,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,fileBytes,estRows
+  if (raw.startsWith('STATUS,')) {
+    const p = raw.split(',');
+    const gpsOk = p[1] === 'GPS_OK';
+    const sdOk  = p[2] === 'SD_OK';
+    const bytes = parseInt(p[3]) || 0;
+    const rows  = parseInt(p[4]) || 0;
+    setDot('gps', gpsOk ? 'green' : 'orange', gpsOk ? 'Fix' : 'No fix');
+    setDot('sd',  sdOk  ? 'green' : 'red',    sdOk  ? 'OK'  : 'Failed');
+    if (!inDump) updateFileInfo(bytes, rows);
+    return;
+  }
+
+  // --- Dump start ---
+  // FORMAT: ##START,<totalBytes>##
+  if (raw.startsWith('##START,')) {
+    const m = raw.match(/##START,(\d+)##/);
+    dumpTotalBytes  = m ? parseInt(m[1]) : 0;
+    dumpRecvBytes   = 0;
+    dumpChunks      = [];
+    dumpLineCount   = 0;
+    dumpLineBuffer  = '';
+    dumpStartTime   = Date.now();
+    dumpSpeedSmooth = 0;
+    inDump = true;
+    showProgress(true);
+    document.getElementById('warn-logging').style.display = 'block';
+    document.getElementById('btn-dump').disabled = true;
+    log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes) + ' to receive');
+    log('   ⚠️  SD logging paused during transfer');
+    return;
+  }
+
+  // --- Dump end ---
+  if (raw.trim() === '##END##') {
+    // Flush any remaining partial line
+    if (dumpLineBuffer.trim()) {
+      dumpLineCount++;
+      dumpLineBuffer = '';
+    }
+    inDump = false;
+    const elapsed = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
+    document.getElementById('prog-bar').classList.add('done');
+    document.getElementById('prog-bar').style.width = '100%';
+    document.getElementById('warn-logging').style.display = 'none';
+    document.getElementById('btn-save-csv').disabled = false;
+    document.getElementById('btn-save-txt').disabled = false;
+    document.getElementById('btn-clear').disabled    = false;
+    document.getElementById('btn-dump').disabled     = false;
+    updateFileInfo(dumpRecvBytes, dumpLineCount);
+    log('✅ Transfer complete — ' + dumpLineCount.toLocaleString() + ' rows in ' + elapsed + 's');
+    return;
+  }
+
+  // --- Errors ---
+  if (raw.startsWith('##ERROR')) {
+    log('❌ ' + raw.replace('##', '').replace('##', ''));
+    inDump = false;
+    showProgress(false);
+    document.getElementById('warn-logging').style.display = 'none';
+    document.getElementById('btn-dump').disabled = false;
+    return;
+  }
+
+  if (raw.trim() === '##CLEARED##') {
+    log('🗑 data.txt wiped on SD card.');
+    updateFileInfo(0, 0);
+    dumpChunks = []; dumpLineCount = 0;
+    document.getElementById('btn-save-csv').disabled = true;
+    document.getElementById('btn-save-txt').disabled = true;
+    document.getElementById('btn-clear').disabled    = true;
+    return;
+  }
+
+  // --- Dump data chunk ---
+  if (inDump) {
+    dumpChunks.push(raw);
+    dumpRecvBytes += raw.length;
+
+    // Count lines for progress (fast — no full parse)
+    dumpLineBuffer += raw;
+    const lines = dumpLineBuffer.split('\n');
+    dumpLineBuffer = lines.pop();       // keep incomplete last line
+    dumpLineCount += lines.filter(l => l.trim().length > 0).length;
+
+    updateProgress();
+  }
+}
+
+// ===================================================================
+// Progress UI
+// ===================================================================
+function showProgress(show) {
+  document.getElementById('prog-wrap').style.display  = show ? 'block' : 'none';
+  document.getElementById('prog-stats').style.display = show ? 'grid'  : 'none';
+  if (!show) {
+    document.getElementById('prog-bar').style.width = '0%';
+    document.getElementById('prog-bar').classList.remove('done');
+  }
+}
+
+function updateProgress() {
+  const pct      = dumpTotalBytes > 0 ? (dumpRecvBytes / dumpTotalBytes * 100) : 0;
+  const elapsed  = (Date.now() - dumpStartTime) / 1000;
+  const kbps     = elapsed > 0 ? (dumpRecvBytes / 1024 / elapsed) : 0;
+  dumpSpeedSmooth = dumpSpeedSmooth * 0.85 + kbps * 0.15;
+  const remaining = dumpSpeedSmooth > 0
+    ? ((dumpTotalBytes - dumpRecvBytes) / 1024 / dumpSpeedSmooth)
+    : 0;
+
+  document.getElementById('prog-bar').style.width = Math.min(pct, 99) + '%';
+  document.getElementById('ps-recv').textContent  = fmtBytes(dumpRecvBytes) + ' / ' + fmtBytes(dumpTotalBytes);
+  document.getElementById('ps-rows').textContent  = dumpLineCount.toLocaleString();
+  document.getElementById('ps-eta').textContent   = remaining > 0 ? fmtTime(remaining) : '…';
+}
+
+function updateFileInfo(bytes, rows) {
+  document.getElementById('info-size').textContent = bytes > 0 ? fmtBytes(bytes) : '—';
+  document.getElementById('info-rows').textContent = rows  > 0 ? rows.toLocaleString() : '—';
+  // Estimate transfer time at ~22 KB/s (20ms BLE intervals, ~440 byte chunks)
+  const etaSec = bytes > 0 ? bytes / 1024 / 22 : 0;
+  document.getElementById('info-eta').textContent  = etaSec > 0 ? '~' + fmtTime(etaSec) : '—';
+}
+
+// ===================================================================
+// Exports
+// ===================================================================
+// Save as CSV — same columns as the Python script output:
+// Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw
+function saveCSV() {
+  if (dumpChunks.length === 0) { log('No data to save.'); return; }
+  log('Converting to CSV…');
+
+  const header = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n';
+  const allText = dumpChunks.join('');
+  const lines   = allText.split('\n');
+  const rows    = [];
+
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) continue;
+    const parts = t.split(' | ');
+    if (parts.length !== 6) continue;
+    try {
+      const time  = parts[0].split(': ').slice(1).join(': ').trim();
+      let lat = '', lon = '';
+      if (!parts[1].includes('Invalid')) {
+        const gd = parts[1].split(': ').slice(1).join(': ').trim();
+        [lat, lon] = gd.split(',').map(s => s.trim());
+      }
+      const acc   = parts[2].split(': ')[1].split(',').map(s => s.trim());
+      const roll  = parts[3].split(': ')[1].trim();
+      const pitch = parts[4].split(': ')[1].trim();
+      const yaw   = parts[5].split(': ')[1].trim();
+      rows.push(time + ',' + lat + ',' + lon + ',' +
+                acc[0] + ',' + acc[1] + ',' + acc[2] + ',' +
+                roll + ',' + pitch + ',' + yaw);
+    } catch(e) { /* skip malformed */ }
+  }
+
+  const csv  = header + rows.join('\n');
+  const date = new Date().toISOString().slice(0, 10);
+  download(csv, date + '.csv', 'text/csv');
+  log('💾 Saved ' + date + '.csv — ' + rows.length.toLocaleString() + ' rows');
+}
+
+// Save as raw .txt — identical format to what the Python script reads
+function saveTXT() {
+  if (dumpChunks.length === 0) { log('No data to save.'); return; }
+  const txt  = dumpChunks.join('');
+  const date = new Date().toISOString().slice(0, 10);
+  download(txt, date + '_data.txt', 'text/plain');
+  log('📄 Saved ' + date + '_data.txt (' + fmtBytes(txt.length) + ')');
+}
+
+function download(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===================================================================
+// ESP32 Commands
+// ===================================================================
+async function requestDump() {
+  if (!writeChar) return;
+  try {
+    document.getElementById('btn-dump').disabled = true;
+    await writeChar.writeValue(new TextEncoder().encode('DUMP'));
+    log('📤 DUMP command sent…');
+  } catch (e) {
+    log('❌ ' + e.message);
+    document.getElementById('btn-dump').disabled = false;
+  }
+}
+
+async function clearSD() {
+  if (!writeChar) return;
+  if (!confirm('This will permanently delete ALL data in data.txt on the SD card.\n\nMake sure you have saved your data first!')) return;
+  try {
+    await writeChar.writeValue(new TextEncoder().encode('CLEAR'));
+    log('📤 CLEAR command sent…');
+  } catch (e) { log('❌ ' + e.message); }
+}
+
+// ===================================================================
+// UI Helpers
+// ===================================================================
+function setDot(id, colour, text) {
+  const dot = document.getElementById('dot-' + id);
+  const val = document.getElementById('val-' + id);
+  dot.className = 'status-dot' + (colour ? ' ' + colour : '');
+  val.textContent = text;
+}
+
+function log(msg) {
+  const el = document.getElementById('log');
+  const ts = new Date().toTimeString().slice(0, 8);
+  el.textContent += '[' + ts + '] ' + msg + '\n';
+  el.scrollTop    = el.scrollHeight;
+}
+
+function fmtBytes(b) {
+  if (b >= 1048576) return (b/1048576).toFixed(1) + ' MB';
+  if (b >= 1024)    return (b/1024).toFixed(1)    + ' KB';
+  return b + ' B';
+}
+
+function fmtTime(sec) {
+  const s = Math.round(sec);
+  if (s >= 3600) return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
+  if (s >= 60)   return Math.floor(s/60) + 'm ' + (s%60) + 's';
+  return s + 's';
+}
+</script>
 </body>
 </html>
-
-
