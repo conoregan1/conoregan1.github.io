@@ -38,12 +38,12 @@
   }
 
   /* Status indicators */
-  .status-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .status-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
   .status-cell {
     background: var(--surface2); border-radius: 8px;
-    padding: 10px 8px; text-align: center;
+    padding: 10px 6px; text-align: center;
   }
-  .status-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .status-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
   .status-dot {
     width: 12px; height: 12px; border-radius: 50%;
     background: var(--muted); margin: 0 auto 4px;
@@ -51,8 +51,8 @@
   }
   .status-dot.green  { background: var(--green);  box-shadow: 0 0 8px var(--green); }
   .status-dot.orange { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
-  .status-dot.red    { background: var(--red); }
-  .status-val { font-size: 0.72rem; font-weight: 600; }
+  .status-dot.red    { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+  .status-val { font-size: 0.68rem; font-weight: 600; }
 
   /* File info */
   .info-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 4px 0; border-bottom: 1px solid var(--border); }
@@ -63,8 +63,8 @@
   /* Buttons */
   .btn {
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 12px 16px; border: none; border-radius: 10px;
-    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    width: 100%; padding: 13px 16px; border: none; border-radius: 10px;
+    font-size: 0.92rem; font-weight: 600; cursor: pointer;
     transition: opacity 0.15s, transform 0.1s;
   }
   .btn:active { transform: scale(0.97); }
@@ -72,29 +72,31 @@
   .btn + .btn { margin-top: 8px; }
   .btn-primary  { background: var(--accent);  color: #fff; }
   .btn-secondary{ background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-  .btn-success  { background: var(--green);   color: #0a2a1e; }
-  .btn-warn     { background: #2a1f0a;        color: var(--orange); border: 1px solid #5a3a00; }
-  .btn-danger   { background: #3d1f1f;        color: var(--red);    border: 1px solid #5a2a2a; }
+  .btn-green    { background: var(--green);   color: #0a2a1e; }
+  .btn-orange   { background: #2a1f0a;        color: var(--orange); border: 1px solid #5a3a00; }
+  .btn-red      { background: #3d1f1f;        color: var(--red);    border: 1px solid #5a2a2a; }
+  .btn-blue     { background: #0a1a3a;        color: var(--accent); border: 1px solid #1a3a6a; }
+
+  /* Logging state banner */
+  .state-banner {
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 0.85rem; font-weight: 600;
+    text-align: center; margin-bottom: 10px;
+    transition: background 0.3s, color 0.3s;
+  }
+  .state-banner.off     { background: var(--surface2); color: var(--muted);  border: 1px solid var(--border); }
+  .state-banner.logging { background: #0a2a1e;          color: var(--green);  border: 1px solid #1a5a3a; }
+  .state-banner.paused  { background: #2a1f0a;          color: var(--orange); border: 1px solid #5a3a00; }
 
   /* Progress */
   .progress-wrap {
     background: var(--surface2); border-radius: 6px;
     height: 10px; overflow: hidden; margin: 10px 0 4px;
   }
-  .progress-bar {
-    height: 100%; background: var(--accent);
-    border-radius: 6px; width: 0%;
-    transition: width 0.4s ease;
-  }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 6px; width: 0%; transition: width 0.4s ease; }
   .progress-bar.done { background: var(--green); }
-  .progress-stats {
-    display: grid; grid-template-columns: repeat(3,1fr);
-    gap: 6px; margin-top: 8px;
-  }
-  .pstat {
-    background: var(--surface2); border-radius: 6px;
-    padding: 6px 8px; text-align: center;
-  }
+  .progress-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 8px; }
+  .pstat { background: var(--surface2); border-radius: 6px; padding: 6px 8px; text-align: center; }
   .pstat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .pstat-val { font-family: var(--mono); font-size: 0.82rem; font-weight: 600; color: var(--text); margin-top: 2px; }
 
@@ -108,14 +110,16 @@
   .warn-box {
     background: #2a1f0a; border: 1px solid #5a3a00; border-radius: 8px;
     padding: 10px 12px; font-size: 0.8rem; color: var(--orange);
-    margin-bottom: 10px; line-height: 1.5;
+    margin-bottom: 10px; line-height: 1.5; display: none;
   }
+
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 </style>
 </head>
 <body>
 
 <h1>ESP32 <span>Sensor Logger</span></h1>
-<p class="sub">Open in Edge or Chrome on Windows/Mac/Android &nbsp;·&nbsp; Web Bluetooth required</p>
+<p class="sub">Edge / Chrome on Windows·Mac·Android &nbsp;·&nbsp; Bluefy on iPhone</p>
 
 <!-- ── Status ─────────────────────────────── -->
 <div class="card">
@@ -125,6 +129,11 @@
       <div class="status-label">Bluetooth</div>
       <div class="status-dot" id="dot-ble"></div>
       <div class="status-val" id="val-ble">Off</div>
+    </div>
+    <div class="status-cell">
+      <div class="status-label">Logging</div>
+      <div class="status-dot" id="dot-log"></div>
+      <div class="status-val" id="val-log">—</div>
     </div>
     <div class="status-cell">
       <div class="status-label">GPS</div>
@@ -138,26 +147,40 @@
     </div>
   </div>
   <div style="margin-top:10px; display:flex; gap:8px;">
-    <button class="btn btn-primary" id="btn-connect" onclick="connectBLE()" style="flex:1">🔵 Connect</button>
+    <button class="btn btn-primary"   id="btn-connect"    onclick="connectBLE()"    style="flex:1">🔵 Connect</button>
     <button class="btn btn-secondary" id="btn-disconnect" onclick="disconnectBLE()" disabled style="flex:1">Disconnect</button>
   </div>
+</div>
+
+<!-- ── Logging Control ────────────────────── -->
+<div class="card">
+  <div class="card-title">Logging Control</div>
+
+  <div class="state-banner off" id="state-banner">● Logging is OFF</div>
+
+  <div class="btn-row">
+    <button class="btn btn-green"  id="btn-start" onclick="sendCmd('START')" disabled>▶ Start Logging</button>
+    <button class="btn btn-orange" id="btn-pause" onclick="sendCmd('PAUSE')" disabled>⏸ Pause Logging</button>
+  </div>
+  <button class="btn btn-red" id="btn-stop" onclick="sendCmd('STOP')" disabled style="margin-top:8px">
+    ⏹ Stop Logging
+  </button>
 </div>
 
 <!-- ── File Info ───────────────────────────── -->
 <div class="card">
   <div class="card-title">data.txt on SD Card</div>
-  <div class="info-row"><span class="info-key">File size</span><span class="info-val" id="info-size">—</span></div>
-  <div class="info-row"><span class="info-key">~Rows (250 Hz)</span><span class="info-val" id="info-rows">—</span></div>
-  <div class="info-row"><span class="info-key">~Est. transfer time</span><span class="info-val" id="info-eta">—</span></div>
+  <div class="info-row"><span class="info-key">File size</span>       <span class="info-val" id="info-size">—</span></div>
+  <div class="info-row"><span class="info-key">Rows logged</span>     <span class="info-val" id="info-rows">—</span></div>
+  <div class="info-row"><span class="info-key">Est. transfer time</span><span class="info-val" id="info-eta">—</span></div>
 </div>
 
-<!-- ── Transfer ────────────────────────────── -->
+<!-- ── Transfer & Export ──────────────────── -->
 <div class="card">
   <div class="card-title">Transfer &amp; Export</div>
 
-  <div class="warn-box" id="warn-logging" style="display:none">
-    ⚠️ SD logging is <strong>paused</strong> while transferring.
-    Trigger this at the end of a session for best results.
+  <div class="warn-box" id="warn-transfer">
+    ⚠️ SD logging is <strong>paused</strong> while transferring. Stop logging first for cleanest results.
   </div>
 
   <div class="progress-wrap" id="prog-wrap" style="display:none">
@@ -169,17 +192,20 @@
     <div class="pstat"><div class="pstat-label">ETA</div>     <div class="pstat-val" id="ps-eta">—</div></div>
   </div>
 
-  <button class="btn btn-secondary" id="btn-dump"     onclick="requestDump()" disabled style="margin-top:10px">
-    📥 &nbsp;Download data.txt from SD card
+  <button class="btn btn-blue"      id="btn-stop-dl" onclick="stopAndDownload()" disabled style="margin-bottom:8px">
+    ⏹💾 Stop &amp; Download
   </button>
-  <button class="btn btn-success"   id="btn-save-csv" onclick="saveCSV()"     disabled>
-    💾 &nbsp;Save as CSV (for Python script)
+  <button class="btn btn-secondary" id="btn-dump"     onclick="requestDump()"    disabled>
+    📥 Download data.txt from SD
   </button>
-  <button class="btn btn-warn"      id="btn-save-txt" onclick="saveTXT()"     disabled>
-    📄 &nbsp;Save as raw .txt (original format)
+  <button class="btn btn-green"     id="btn-save-csv" onclick="saveCSV()"        disabled>
+    💾 Save as CSV
   </button>
-  <button class="btn btn-danger"    id="btn-clear"    onclick="clearSD()"     disabled>
-    🗑 &nbsp;Wipe data.txt on SD card
+  <button class="btn btn-orange"    id="btn-save-txt" onclick="saveTXT()"        disabled>
+    📄 Save as raw .txt
+  </button>
+  <button class="btn btn-red"       id="btn-clear"    onclick="clearSD()"        disabled>
+    🗑 Wipe data.txt on SD card
   </button>
 </div>
 
@@ -190,36 +216,31 @@
 </div>
 
 <script>
-// ===================================================================
-// UUIDs — must match Arduino sketch exactly
-// ===================================================================
 const SERVICE_UUID     = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 
-// ===================================================================
-// State
-// ===================================================================
 let device     = null;
 let notifyChar = null;
 let writeChar  = null;
+let logState   = 'OFF'; // OFF | LOGGING | PAUSED
 
 // Transfer state
-let inDump         = false;
-let dumpTotalBytes = 0;
-let dumpRecvBytes  = 0;
-let dumpChunks     = [];   // raw string chunks for txt export
-let dumpLineCount  = 0;    // running count of parsed lines
-let dumpLineBuffer = '';   // partial line accumulator
-let dumpStartTime  = 0;
-let dumpSpeedSmooth = 0;   // smoothed KB/s
+let inDump          = false;
+let dumpTotalBytes  = 0;
+let dumpRecvBytes   = 0;
+let dumpChunks      = [];
+let dumpLineCount   = 0;
+let dumpLineBuffer  = '';
+let dumpStartTime   = 0;
+let dumpSpeedSmooth = 0;
 
 // ===================================================================
 // BLE Connection
 // ===================================================================
 async function connectBLE() {
   if (!navigator.bluetooth) {
-    log('❌ Web Bluetooth not available. Use Edge or Chrome.');
+    log('❌ Web Bluetooth not available. Use Edge, Chrome, or Bluefy.');
     return;
   }
   try {
@@ -240,7 +261,10 @@ async function connectBLE() {
     log('✅ Connected to ' + device.name);
     document.getElementById('btn-connect').disabled    = true;
     document.getElementById('btn-disconnect').disabled = false;
-    document.getElementById('btn-dump').disabled       = false;
+    // Enable logging controls
+    document.getElementById('btn-start').disabled  = false;
+    document.getElementById('btn-stop-dl').disabled = false;
+    document.getElementById('btn-dump').disabled   = false;
   } catch (e) {
     log('❌ ' + e.message);
     setDot('ble', 'red', 'Failed');
@@ -254,37 +278,48 @@ function disconnectBLE() {
 function onDisconnected() {
   log('⚠️ Disconnected.');
   setDot('ble', 'red', 'Off');
+  setDot('log', '', '—');
   setDot('gps', '', '—');
   setDot('sd',  '', '—');
+  ['btn-connect','btn-start','btn-pause','btn-stop',
+   'btn-stop-dl','btn-dump','btn-save-csv','btn-save-txt','btn-clear']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    });
   document.getElementById('btn-connect').disabled    = false;
   document.getElementById('btn-disconnect').disabled = true;
-  document.getElementById('btn-dump').disabled       = true;
   inDump = false;
-  document.getElementById('warn-logging').style.display = 'none';
+  setLogState('OFF');
 }
 
 // ===================================================================
-// Incoming data handler
+// Incoming data
 // ===================================================================
 function onData(event) {
   const raw = new TextDecoder().decode(event.target.value);
 
-  // --- STATUS packet ---
-  // FORMAT: STATUS,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,fileBytes,estRows
+  // STATUS packet: STATUS,LOGGING|PAUSED|OFF,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,fileBytes,rowsLogged
   if (raw.startsWith('STATUS,')) {
     const p = raw.split(',');
-    const gpsOk = p[1] === 'GPS_OK';
-    const sdOk  = p[2] === 'SD_OK';
-    const bytes = parseInt(p[3]) || 0;
-    const rows  = parseInt(p[4]) || 0;
+    const state  = p[1];
+    const gpsOk  = p[2] === 'GPS_OK';
+    const sdOk   = p[3] === 'SD_OK';
+    const bytes  = parseInt(p[4]) || 0;
+    const rows   = parseInt(p[5]) || 0;
+    setLogState(state);
     setDot('gps', gpsOk ? 'green' : 'orange', gpsOk ? 'Fix' : 'No fix');
     setDot('sd',  sdOk  ? 'green' : 'red',    sdOk  ? 'OK'  : 'Failed');
     if (!inDump) updateFileInfo(bytes, rows);
     return;
   }
 
-  // --- Dump start ---
-  // FORMAT: ##START,<totalBytes>##
+  // Logging control confirmations
+  if (raw.trim() === '##LOG_STARTED##') { setLogState('LOGGING'); log('▶ Logging started'); return; }
+  if (raw.trim() === '##LOG_PAUSED##')  { setLogState('PAUSED');  log('⏸ Logging paused');  return; }
+  if (raw.trim() === '##LOG_STOPPED##') { setLogState('OFF');     log('⏹ Logging stopped'); return; }
+
+  // Dump start: ##START,<bytes>##
   if (raw.startsWith('##START,')) {
     const m = raw.match(/##START,(\d+)##/);
     dumpTotalBytes  = m ? parseInt(m[1]) : 0;
@@ -296,16 +331,14 @@ function onData(event) {
     dumpSpeedSmooth = 0;
     inDump = true;
     showProgress(true);
-    document.getElementById('warn-logging').style.display = 'block';
+    document.getElementById('warn-transfer').style.display = 'block';
     document.getElementById('btn-dump').disabled = true;
-    log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes) + ' to receive');
-    log('   ⚠️  SD logging paused during transfer');
+    log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes));
     return;
   }
 
-  // --- Dump end ---
+  // Dump end
   if (raw.trim() === '##END##') {
-    // Flush any remaining partial line
     if (dumpLineBuffer.trim()) {
       dumpLineCount++;
       dumpLineBuffer = '';
@@ -314,7 +347,7 @@ function onData(event) {
     const elapsed = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
     document.getElementById('prog-bar').classList.add('done');
     document.getElementById('prog-bar').style.width = '100%';
-    document.getElementById('warn-logging').style.display = 'none';
+    document.getElementById('warn-transfer').style.display = 'none';
     document.getElementById('btn-save-csv').disabled = false;
     document.getElementById('btn-save-txt').disabled = false;
     document.getElementById('btn-clear').disabled    = false;
@@ -324,12 +357,11 @@ function onData(event) {
     return;
   }
 
-  // --- Errors ---
   if (raw.startsWith('##ERROR')) {
-    log('❌ ' + raw.replace('##', '').replace('##', ''));
+    log('❌ ' + raw.replace(/##/g, ''));
     inDump = false;
     showProgress(false);
-    document.getElementById('warn-logging').style.display = 'none';
+    document.getElementById('warn-transfer').style.display = 'none';
     document.getElementById('btn-dump').disabled = false;
     return;
   }
@@ -344,19 +376,62 @@ function onData(event) {
     return;
   }
 
-  // --- Dump data chunk ---
+  // Dump data chunk
   if (inDump) {
     dumpChunks.push(raw);
     dumpRecvBytes += raw.length;
-
-    // Count lines for progress (fast — no full parse)
     dumpLineBuffer += raw;
     const lines = dumpLineBuffer.split('\n');
-    dumpLineBuffer = lines.pop();       // keep incomplete last line
+    dumpLineBuffer = lines.pop();
     dumpLineCount += lines.filter(l => l.trim().length > 0).length;
-
     updateProgress();
   }
+}
+
+// ===================================================================
+// Logging state UI
+// ===================================================================
+function setLogState(state) {
+  logState = state;
+  const banner = document.getElementById('state-banner');
+
+  // Dot and banner
+  if (state === 'LOGGING') {
+    setDot('log', 'green', 'Logging');
+    banner.className = 'state-banner logging';
+    banner.textContent = '● Logging is ACTIVE';
+  } else if (state === 'PAUSED') {
+    setDot('log', 'orange', 'Paused');
+    banner.className = 'state-banner paused';
+    banner.textContent = '⏸ Logging is PAUSED';
+  } else {
+    setDot('log', 'red', 'Off');
+    banner.className = 'state-banner off';
+    banner.textContent = '● Logging is OFF';
+  }
+
+  // Button states
+  const connected = !document.getElementById('btn-disconnect').disabled;
+  document.getElementById('btn-start').disabled =
+    !connected || state === 'LOGGING';
+  document.getElementById('btn-pause').disabled =
+    !connected || state !== 'LOGGING';
+  document.getElementById('btn-stop').disabled =
+    !connected || state === 'OFF';
+  document.getElementById('btn-dump').disabled =
+    !connected || inDump;
+}
+
+// ===================================================================
+// Stop & Download shortcut
+// ===================================================================
+async function stopAndDownload() {
+  if (logState !== 'OFF') {
+    await sendCmd('STOP');
+    // Small delay to let ESP32 flush before starting dump
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  requestDump();
 }
 
 // ===================================================================
@@ -372,24 +447,21 @@ function showProgress(show) {
 }
 
 function updateProgress() {
-  const pct      = dumpTotalBytes > 0 ? (dumpRecvBytes / dumpTotalBytes * 100) : 0;
-  const elapsed  = (Date.now() - dumpStartTime) / 1000;
-  const kbps     = elapsed > 0 ? (dumpRecvBytes / 1024 / elapsed) : 0;
+  const pct     = dumpTotalBytes > 0 ? (dumpRecvBytes / dumpTotalBytes * 100) : 0;
+  const elapsed = (Date.now() - dumpStartTime) / 1000;
+  const kbps    = elapsed > 0 ? (dumpRecvBytes / 1024 / elapsed) : 0;
   dumpSpeedSmooth = dumpSpeedSmooth * 0.85 + kbps * 0.15;
-  const remaining = dumpSpeedSmooth > 0
-    ? ((dumpTotalBytes - dumpRecvBytes) / 1024 / dumpSpeedSmooth)
-    : 0;
-
+  const rem = dumpSpeedSmooth > 0
+    ? ((dumpTotalBytes - dumpRecvBytes) / 1024 / dumpSpeedSmooth) : 0;
   document.getElementById('prog-bar').style.width = Math.min(pct, 99) + '%';
   document.getElementById('ps-recv').textContent  = fmtBytes(dumpRecvBytes) + ' / ' + fmtBytes(dumpTotalBytes);
   document.getElementById('ps-rows').textContent  = dumpLineCount.toLocaleString();
-  document.getElementById('ps-eta').textContent   = remaining > 0 ? fmtTime(remaining) : '…';
+  document.getElementById('ps-eta').textContent   = rem > 0 ? fmtTime(rem) : '…';
 }
 
 function updateFileInfo(bytes, rows) {
   document.getElementById('info-size').textContent = bytes > 0 ? fmtBytes(bytes) : '—';
   document.getElementById('info-rows').textContent = rows  > 0 ? rows.toLocaleString() : '—';
-  // Estimate transfer time at ~22 KB/s (20ms BLE intervals, ~440 byte chunks)
   const etaSec = bytes > 0 ? bytes / 1024 / 22 : 0;
   document.getElementById('info-eta').textContent  = etaSec > 0 ? '~' + fmtTime(etaSec) : '—';
 }
@@ -397,24 +469,19 @@ function updateFileInfo(bytes, rows) {
 // ===================================================================
 // Exports
 // ===================================================================
-// Save as CSV — same columns as the Python script output:
-// Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw
 function saveCSV() {
-  if (dumpChunks.length === 0) { log('No data to save.'); return; }
-  log('Converting to CSV…');
-
-  const header = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n';
+  if (!dumpChunks.length) { log('No data to save.'); return; }
+  const header  = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n';
   const allText = dumpChunks.join('');
   const lines   = allText.split('\n');
   const rows    = [];
-
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;
     const parts = t.split(' | ');
     if (parts.length !== 6) continue;
     try {
-      const time  = parts[0].split(': ').slice(1).join(': ').trim();
+      const time = parts[0].split(': ').slice(1).join(': ').trim();
       let lat = '', lon = '';
       if (!parts[1].includes('Invalid')) {
         const gd = parts[1].split(': ').slice(1).join(': ').trim();
@@ -424,21 +491,17 @@ function saveCSV() {
       const roll  = parts[3].split(': ')[1].trim();
       const pitch = parts[4].split(': ')[1].trim();
       const yaw   = parts[5].split(': ')[1].trim();
-      rows.push(time + ',' + lat + ',' + lon + ',' +
-                acc[0] + ',' + acc[1] + ',' + acc[2] + ',' +
-                roll + ',' + pitch + ',' + yaw);
+      rows.push(time+','+lat+','+lon+','+acc[0]+','+acc[1]+','+acc[2]+','+roll+','+pitch+','+yaw);
     } catch(e) { /* skip malformed */ }
   }
-
-  const csv  = header + rows.join('\n');
+  if (!rows.length) { log('❌ No valid rows found — check data format'); return; }
   const date = new Date().toISOString().slice(0, 10);
-  download(csv, date + '.csv', 'text/csv');
+  download(header + rows.join('\n'), date + '.csv', 'text/csv');
   log('💾 Saved ' + date + '.csv — ' + rows.length.toLocaleString() + ' rows');
 }
 
-// Save as raw .txt — identical format to what the Python script reads
 function saveTXT() {
-  if (dumpChunks.length === 0) { log('No data to save.'); return; }
+  if (!dumpChunks.length) { log('No data to save.'); return; }
   const txt  = dumpChunks.join('');
   const date = new Date().toISOString().slice(0, 10);
   download(txt, date + '_data.txt', 'text/plain');
@@ -456,6 +519,14 @@ function download(content, filename, mime) {
 // ===================================================================
 // ESP32 Commands
 // ===================================================================
+async function sendCmd(cmd) {
+  if (!writeChar) return;
+  try {
+    await writeChar.writeValue(new TextEncoder().encode(cmd));
+    log('📤 ' + cmd + ' sent');
+  } catch (e) { log('❌ ' + e.message); }
+}
+
 async function requestDump() {
   if (!writeChar) return;
   try {
@@ -470,7 +541,7 @@ async function requestDump() {
 
 async function clearSD() {
   if (!writeChar) return;
-  if (!confirm('This will permanently delete ALL data in data.txt on the SD card.\n\nMake sure you have saved your data first!')) return;
+  if (!confirm('Permanently delete ALL data in data.txt?\n\nMake sure you have saved your data first!')) return;
   try {
     await writeChar.writeValue(new TextEncoder().encode('CLEAR'));
     log('📤 CLEAR command sent…');
