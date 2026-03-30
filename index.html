@@ -37,7 +37,6 @@
     text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
   }
 
-  /* Status indicators */
   .status-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
   .status-cell {
     background: var(--surface2); border-radius: 8px;
@@ -54,7 +53,6 @@
   .status-dot.red    { background: var(--red);    box-shadow: 0 0 6px var(--red); }
   .status-val { font-size: 0.68rem; font-weight: 600; }
 
-  /* File info */
   .info-row {
     display: flex; justify-content: space-between;
     font-size: 0.82rem; padding: 4px 0;
@@ -64,7 +62,6 @@
   .info-key { color: var(--muted); }
   .info-val { font-family: var(--mono); font-weight: 600; color: var(--accent); }
 
-  /* Buttons */
   .btn {
     display: flex; align-items: center; justify-content: center; gap: 8px;
     width: 100%; padding: 13px 16px; border: none; border-radius: 10px;
@@ -81,7 +78,6 @@
   .btn-red       { background: #3d1f1f;         color: var(--red);    border: 1px solid #5a2a2a; }
   .btn-blue      { background: #0a1a3a;         color: var(--accent); border: 1px solid #1a3a6a; }
 
-  /* Logging state banner */
   .state-banner {
     border-radius: 8px; padding: 10px 14px;
     font-size: 0.85rem; font-weight: 600;
@@ -92,7 +88,6 @@
   .state-banner.logging { background: #0a2a1e;          color: var(--green);  border: 1px solid #1a5a3a; }
   .state-banner.paused  { background: #2a1f0a;          color: var(--orange); border: 1px solid #5a3a00; }
 
-  /* Progress */
   .progress-wrap {
     background: var(--surface2); border-radius: 6px;
     height: 10px; overflow: hidden; margin: 10px 0 4px;
@@ -102,15 +97,11 @@
     border-radius: 6px; width: 0%; transition: width 0.4s ease;
   }
   .progress-bar.done { background: var(--green); }
-  .progress-stats {
-    display: grid; grid-template-columns: repeat(3,1fr);
-    gap: 6px; margin-top: 8px;
-  }
+  .progress-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 8px; }
   .pstat { background: var(--surface2); border-radius: 6px; padding: 6px 8px; text-align: center; }
   .pstat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .pstat-val { font-family: var(--mono); font-size: 0.82rem; font-weight: 600; color: var(--text); margin-top: 2px; }
 
-  /* Log */
   #log {
     font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
     background: var(--surface2); border-radius: 8px; padding: 10px;
@@ -124,6 +115,12 @@
   }
 
   .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Divider line above wipe button to make it feel separate */
+  .danger-divider {
+    border: none; border-top: 1px solid var(--border);
+    margin: 12px 0 10px;
+  }
 </style>
 </head>
 <body>
@@ -213,7 +210,10 @@
   <button class="btn btn-orange"    id="btn-save-txt" onclick="saveTXT()"        disabled>
     📄 Save as raw .txt
   </button>
-  <button class="btn btn-red"       id="btn-clear"    onclick="clearSD()"        disabled>
+
+  <!-- Wipe is now always available once connected — no download required first -->
+  <hr class="danger-divider">
+  <button class="btn btn-red" id="btn-clear" onclick="clearSD()" disabled>
     🗑 Wipe data.txt on SD card
   </button>
 </div>
@@ -232,15 +232,11 @@ const SERVICE_UUID     = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 
-// ===================================================================
-// State
-// ===================================================================
 let device     = null;
 let notifyChar = null;
 let writeChar  = null;
-let logState   = 'OFF'; // OFF | LOGGING | PAUSED
+let logState   = 'OFF';
 
-// Transfer state
 let inDump          = false;
 let dumpTotalBytes  = 0;
 let dumpRecvBytes   = 0;
@@ -250,7 +246,6 @@ let dumpLineBuffer  = '';
 let dumpStartTime   = 0;
 let dumpSpeedSmooth = 0;
 
-// Detect iOS once on load
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -284,6 +279,8 @@ async function connectBLE() {
     document.getElementById('btn-start').disabled      = false;
     document.getElementById('btn-stop-dl').disabled    = false;
     document.getElementById('btn-dump').disabled       = false;
+    // FIX 2: Clear is enabled as soon as we connect — no download needed first
+    document.getElementById('btn-clear').disabled      = false;
   } catch (e) {
     log('❌ ' + e.message);
     setDot('ble', 'red', 'Failed');
@@ -318,7 +315,6 @@ function onDisconnected() {
 function onData(event) {
   const raw = new TextDecoder().decode(event.target.value);
 
-  // STATUS,LOGGING|PAUSED|OFF,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,fileBytes,rowsLogged
   if (raw.startsWith('STATUS,')) {
     const p     = raw.split(',');
     const state = p[1];
@@ -333,12 +329,10 @@ function onData(event) {
     return;
   }
 
-  // Logging control confirmations
   if (raw.trim() === '##LOG_STARTED##') { setLogState('LOGGING'); log('▶ Logging started'); return; }
   if (raw.trim() === '##LOG_PAUSED##')  { setLogState('PAUSED');  log('⏸ Logging paused');  return; }
   if (raw.trim() === '##LOG_STOPPED##') { setLogState('OFF');     log('⏹ Logging stopped'); return; }
 
-  // Dump start: ##START,<totalBytes>##
   if (raw.startsWith('##START,')) {
     const m = raw.match(/##START,(\d+)##/);
     dumpTotalBytes  = m ? parseInt(m[1]) : 0;
@@ -351,39 +345,36 @@ function onData(event) {
     inDump = true;
     showProgress(true);
     document.getElementById('warn-transfer').style.display = 'block';
-    document.getElementById('btn-dump').disabled = true;
+    document.getElementById('btn-dump').disabled  = true;
+    document.getElementById('btn-clear').disabled = true;  // lock during transfer
     log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes) + ' to receive');
     return;
   }
 
-  // Dump end
   if (raw.trim() === '##END##') {
-    if (dumpLineBuffer.trim()) {
-      dumpLineCount++;
-      dumpLineBuffer = '';
-    }
+    if (dumpLineBuffer.trim()) { dumpLineCount++; dumpLineBuffer = ''; }
     inDump = false;
     const elapsed = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
     document.getElementById('prog-bar').classList.add('done');
-    document.getElementById('prog-bar').style.width = '100%';
+    document.getElementById('prog-bar').style.width         = '100%';
     document.getElementById('warn-transfer').style.display  = 'none';
     document.getElementById('btn-save-csv').disabled = false;
     document.getElementById('btn-save-txt').disabled = false;
-    document.getElementById('btn-clear').disabled    = false;
     document.getElementById('btn-dump').disabled     = false;
+    document.getElementById('btn-clear').disabled    = false; // re-enable after transfer
     updateFileInfo(dumpRecvBytes, dumpLineCount);
     log('✅ Transfer complete — ' + dumpLineCount.toLocaleString() + ' rows in ' + elapsed + 's');
     if (isIOS) log('📱 Tap Save as CSV or Save as raw .txt to open the Share Sheet');
     return;
   }
 
-  // Errors
   if (raw.startsWith('##ERROR')) {
     log('❌ ' + raw.replace(/##/g, ''));
     inDump = false;
     showProgress(false);
     document.getElementById('warn-transfer').style.display = 'none';
-    document.getElementById('btn-dump').disabled = false;
+    document.getElementById('btn-dump').disabled  = false;
+    document.getElementById('btn-clear').disabled = false;
     return;
   }
 
@@ -393,11 +384,9 @@ function onData(event) {
     dumpChunks = []; dumpLineCount = 0;
     document.getElementById('btn-save-csv').disabled = true;
     document.getElementById('btn-save-txt').disabled = true;
-    document.getElementById('btn-clear').disabled    = true;
     return;
   }
 
-  // Dump data chunk
   if (inDump) {
     dumpChunks.push(raw);
     dumpRecvBytes += raw.length;
@@ -435,15 +424,18 @@ function setLogState(state) {
   document.getElementById('btn-pause').disabled = !connected || state !== 'LOGGING';
   document.getElementById('btn-stop').disabled  = !connected || state === 'OFF';
   document.getElementById('btn-dump').disabled  = !connected || inDump;
+  // Clear stays enabled regardless of log state — Arduino handles stopping if needed
+  if (connected && !inDump) {
+    document.getElementById('btn-clear').disabled = false;
+  }
 }
 
 // ===================================================================
-// Stop & Download shortcut
+// Stop & Download
 // ===================================================================
 async function stopAndDownload() {
   if (logState !== 'OFF') {
     await sendCmd('STOP');
-    // Wait for ESP32 to flush final buffer before opening file
     await new Promise(r => setTimeout(r, 1500));
   }
   requestDump();
@@ -526,40 +518,28 @@ function saveTXT() {
   log('📄 ' + fmtBytes(txt.length) + ' ready — ' + (isIOS ? 'Share Sheet opened' : 'downloading ' + date + '_data.txt'));
 }
 
-// ===================================================================
-// Download function — desktop and iOS both handled
-// ===================================================================
 function download(content, filename, mime) {
   const blob = new Blob([content], { type: mime });
   const url  = URL.createObjectURL(blob);
 
   if (isIOS) {
-    // iOS blocks programmatic <a download> entirely.
-    // Use the Web Share API with a File object — this opens the
-    // native iOS share sheet so the user can save to Files,
-    // AirDrop, email, etc.
     if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: mime })] })) {
       const file = new File([blob], filename, { type: mime });
       navigator.share({ files: [file], title: filename })
         .then(() => URL.revokeObjectURL(url))
         .catch(err => {
-          // User cancelled share or share failed — fall back to new tab
           if (err.name !== 'AbortError') {
             log('Share failed, opening in new tab instead');
             window.open(url, '_blank');
           } else {
-            // User just cancelled — that's fine
             URL.revokeObjectURL(url);
           }
         });
     } else {
-      // Older iOS without file sharing support — open in new tab.
-      // User can then tap Share → Save to Files from the browser toolbar.
       window.open(url, '_blank');
       log('📄 Tap the Share button in your browser toolbar → Save to Files');
     }
   } else {
-    // Desktop (Windows/Mac/Android) — standard programmatic download
     const a = Object.assign(document.createElement('a'), {
       href: url, download: filename
     });
@@ -595,7 +575,11 @@ async function requestDump() {
 
 async function clearSD() {
   if (!writeChar) return;
-  if (!confirm('Permanently delete ALL data in data.txt?\n\nMake sure you have saved your data first!')) return;
+  // Friendly warning — mentions that logging will also be stopped if running
+  const msg = logState !== 'OFF'
+    ? 'Logging is currently active.\n\nThis will STOP logging and permanently delete ALL data in data.txt.\n\nContinue?'
+    : 'Permanently delete ALL data in data.txt on the SD card?\n\nMake sure you have saved your data first!';
+  if (!confirm(msg)) return;
   try {
     await writeChar.writeValue(new TextEncoder().encode('CLEAR'));
     log('📤 CLEAR command sent…');
