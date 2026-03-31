@@ -175,6 +175,9 @@ let notifyChar  = null;
 let writeChar   = null;
 let logState    = 'OFF';
 let isConnected = false;
+let endSignalReceived = false;
+let lastDataTime = 0;
+let endWaitTimer = null;
 
 // ===================================================================
 // Dump state
@@ -297,6 +300,7 @@ function onData(event) {
   }
 
   if (inDump) {
+    lastDataTime = Date.now();
     // Combine carry-over + fresh bytes into one contiguous buffer
     const combined = new Uint8Array(dumpCarryOver.length + fresh.length);
     combined.set(dumpCarryOver, 0);
@@ -352,6 +356,7 @@ function handleControlMessage(text) {
   if (text === '##LOG_STOPPED##') { logState='OFF';     log('⏹ Logging stopped'); updateAllButtons(); updateLogBanner(); return; }
 
   if (text.startsWith('##START,') && text.endsWith(',BIN##')) {
+    
     const m = text.match(/##START,(\d+),BIN##/);
     dumpTotalBytes  = m ? parseInt(m[1]) : 0;
     dumpRecvBytes   = 0;
@@ -365,10 +370,53 @@ function handleControlMessage(text) {
     updateAllButtons();
     log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes));
     log('   ESP32 sensors suspended for max speed');
+    endSignalReceived = false;
+    lastDataTime = Date.now();
+    if (endWaitTimer) clearInterval(endWaitTimer);
     return;
   }
 
-  if (text === '##END##')       { finishDump(false); return; }
+  if (text === '##END##') {
+    log('📥 END received — waiting for remaining data...');
+    endSignalReceived = true;
+  
+    // Start monitoring for completion
+    if (endWaitTimer) clearInterval(endWaitTimer);
+  
+    endWaitTimer = setInterval(() => {
+      const expectedBytes = dumpTotalBytes - 4;
+      const received = dumpRecvBytes;
+      const ratio = expectedBytes > 0 ? received / expectedBytes : 0;
+      const now = Date.now();
+      const timeSinceLast = now - lastDataTime;
+  
+      // ✅ Case 1: fully received
+      if (received >= expectedBytes) {
+        clearInterval(endWaitTimer);
+        log('📦 All expected data received');
+        finishDump(false);
+        return;
+    }
+
+    // ⚠️ Case 2: very close but stalled
+    if (ratio > 0.95 && timeSinceLast > 300) {
+      clearInterval(endWaitTimer);
+      log(`⚠️ Near-complete (${(ratio*100).toFixed(1)}%) — assuming finished`);
+      finishDump(false);
+      return;
+    }
+
+    // ⛔ Case 3: timeout safety (avoid infinite wait)
+    if (timeSinceLast > 2000) {
+      clearInterval(endWaitTimer);
+      log(`⚠️ Timeout waiting for remaining data (${(ratio*100).toFixed(1)}%)`);
+      finishDump(false);
+    }
+
+  }, 100);
+
+  return;
+}
   if (text === '##CANCELLED##') { finishDump(true);  return; }
 
   if (text.startsWith('##ERROR')) {
@@ -390,6 +438,7 @@ function handleControlMessage(text) {
 
 function finishDump(cancelled) {
   // Flush any carry-over bytes — shouldn't happen on clean finish but be safe
+  if (endWaitTimer) clearInterval(endWaitTimer);
   dumpCarryOver = new Uint8Array(0);
   inDump        = false;
 
