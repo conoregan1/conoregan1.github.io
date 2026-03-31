@@ -87,7 +87,7 @@
 
 <div class="title-row">
   <h1>ESP32 <span>Sensor Logger</span></h1>
-  <span class="version">v1.0.2</span>
+  <span class="version">v1.1.0</span>
 </div>
 <p class="sub">Edge / Chrome on Windows·Mac·Android &nbsp;·&nbsp; Bluefy on iPhone</p>
 
@@ -146,53 +146,51 @@
 </div>
 
 <script>
-const VERSION = 'v1.0.2';
+const VERSION = 'v1.1.0';
 
 const SERVICE_UUID     = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 
-const RECORD_SIZE = 37;
+// ===================================================================
+// v1.1.0 record layout — 38 bytes
+// ===================================================================
+const RECORD_SIZE = 38;
 const SYNC_BYTE   = 0xAA;
 
-// Field offsets within a record
 const OFF_SYNC      = 0;
-const OFF_HOUR      = 1;
-const OFF_MINUTE    = 2;
-const OFF_SECOND    = 3;
-const OFF_GPS_VALID = 4;
-const OFF_LAT_E6    = 5;
-const OFF_LON_E6    = 9;
-const OFF_ACCEL_X   = 13;
-const OFF_ACCEL_Y   = 17;
-const OFF_ACCEL_Z   = 21;
-const OFF_ROLL      = 25;
-const OFF_PITCH     = 29;
-const OFF_YAW       = 33;
+const OFF_TIME_MS   = 1;   // uint32, little-endian — ms since midnight
+const OFF_GPS_VALID = 5;
+const OFF_LAT_E6    = 6;
+const OFF_LON_E6    = 10;
+const OFF_ACCEL_X   = 14;
+const OFF_ACCEL_Y   = 18;
+const OFF_ACCEL_Z   = 22;
+const OFF_ROLL      = 26;
+const OFF_PITCH     = 30;
+const OFF_YAW       = 34;
 
 let device      = null;
 let notifyChar  = null;
 let writeChar   = null;
 let logState    = 'OFF';
 let isConnected = false;
-let endSignalReceived = false;
-let lastDataTime = 0;
-let endWaitTimer = null;
 
 // ===================================================================
 // Dump state
 // ===================================================================
 let inDump          = false;
-let dumpTotalBytes  = 0;  // total file bytes reported by ESP32 (inc. 4-byte header)
-let dumpRecvBytes   = 0;  // raw bytes received so far
-let dumpRecords     = []; // complete parsed records, each a Uint8Array(37)
+let dumpTotalBytes  = 0;
+let dumpRecvBytes   = 0;
+let dumpRecords     = [];
 let dumpStartTime   = 0;
 let dumpSpeedSmooth = 0;
+let dumpCarryOver   = new Uint8Array(0);
 
-// Carry-over buffer for bytes that arrived mid-record across packet boundaries.
-// The BLE stack may coalesce multiple records into one notification OR split
-// a record across two notifications. This buffer handles both cases correctly.
-let dumpCarryOver = new Uint8Array(0);
+// End-wait timer (kept from previous version — handles straggling packets)
+let endSignalReceived = false;
+let lastDataTime      = 0;
+let endWaitTimer      = null;
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -240,6 +238,7 @@ function disconnectBLE() {
 
 function onDisconnected() {
   log('⚠️ Disconnected.');
+  if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
   isConnected = false; inDump = false;
   setDot('ble','red','Off'); setDot('log','','—'); setDot('gps','','—'); setDot('sd','','—');
   document.getElementById('btn-connect').disabled    = false;
@@ -264,35 +263,13 @@ function updateAllButtons() {
 
 // ===================================================================
 // Incoming data handler
-//
-// KEY FIX (v1.0.2):
-// The previous version only accepted packets of exactly RECORD_SIZE
-// (37) bytes. The BLE stack can coalesce multiple records into one
-// larger notification (e.g. 407 bytes = 11 records). Those were
-// being silently dropped, causing ~10% data loss.
-//
-// The new approach:
-//   1. Prepend any leftover bytes from the previous notification
-//      (dumpCarryOver) to the new packet.
-//   2. Walk through the combined buffer one byte at a time.
-//   3. When SYNC_BYTE is found and >= RECORD_SIZE bytes remain,
-//      extract and store that record.
-//   4. Save any trailing incomplete bytes into dumpCarryOver for
-//      the next notification.
-//
-// This handles every possible packet size correctly.
+// Carry-over buffer handles packets of any size (coalesced or split).
 // ===================================================================
 function onData(event) {
   const dv    = event.target.value;
   const fresh = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
 
-  // Route: if not in a dump, or first byte looks like ASCII text,
-  // treat as a control message.
-  // Binary records always start with 0xAA; ASCII messages start with
-  // printable characters (0x23 '#', 'S', etc.) which are never 0xAA.
   if (!inDump || fresh[0] !== SYNC_BYTE) {
-    // May still be a binary chunk with carry-over; only decode as text
-    // if we have no carry-over (meaning the first byte really is text).
     if (dumpCarryOver.length === 0) {
       handleControlMessage(new TextDecoder().decode(dv).trim());
       return;
@@ -301,36 +278,30 @@ function onData(event) {
 
   if (inDump) {
     lastDataTime = Date.now();
-    // Combine carry-over + fresh bytes into one contiguous buffer
     const combined = new Uint8Array(dumpCarryOver.length + fresh.length);
     combined.set(dumpCarryOver, 0);
     combined.set(fresh, dumpCarryOver.length);
-    dumpCarryOver = new Uint8Array(0); // clear
-
+    dumpCarryOver  = new Uint8Array(0);
     dumpRecvBytes += fresh.length;
 
     let i = 0;
     while (i <= combined.length - RECORD_SIZE) {
       if (combined[i] === SYNC_BYTE) {
-        // Extract this record — copy to independent buffer
         const rec = new Uint8Array(RECORD_SIZE);
         rec.set(combined.subarray(i, i + RECORD_SIZE));
         dumpRecords.push(rec);
         i += RECORD_SIZE;
       } else {
-        // Not a sync byte — skip and resync
         i++;
       }
     }
 
-    // Save leftover bytes (< RECORD_SIZE) for next notification
     if (i < combined.length) {
       dumpCarryOver = new Uint8Array(combined.subarray(i));
     }
 
     updateProgress();
   } else {
-    // Not in dump — decode as text control message
     handleControlMessage(new TextDecoder().decode(dv).trim());
   }
 }
@@ -356,71 +327,61 @@ function handleControlMessage(text) {
   if (text === '##LOG_STOPPED##') { logState='OFF';     log('⏹ Logging stopped'); updateAllButtons(); updateLogBanner(); return; }
 
   if (text.startsWith('##START,') && text.endsWith(',BIN##')) {
-    
     const m = text.match(/##START,(\d+),BIN##/);
-    dumpTotalBytes  = m ? parseInt(m[1]) : 0;
-    dumpRecvBytes   = 0;
-    dumpRecords     = [];
-    dumpCarryOver   = new Uint8Array(0);
-    dumpStartTime   = Date.now();
-    dumpSpeedSmooth = 0;
-    inDump          = true;
+    dumpTotalBytes     = m ? parseInt(m[1]) : 0;
+    dumpRecvBytes      = 0;
+    dumpRecords        = [];
+    dumpCarryOver      = new Uint8Array(0);
+    dumpStartTime      = Date.now();
+    dumpSpeedSmooth    = 0;
+    endSignalReceived  = false;
+    lastDataTime       = Date.now();
+    if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
+    inDump             = true;
     showProgress(true);
     document.getElementById('warn-transfer').style.display = 'block';
     updateAllButtons();
     log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes));
     log('   ESP32 sensors suspended for max speed');
-    endSignalReceived = false;
-    lastDataTime = Date.now();
-    if (endWaitTimer) clearInterval(endWaitTimer);
     return;
   }
 
   if (text === '##END##') {
-    log('📥 END received — waiting for remaining data...');
     endSignalReceived = true;
-  
-    // Start monitoring for completion
+    log('📥 END signal received — waiting for in-flight packets…');
+
     if (endWaitTimer) clearInterval(endWaitTimer);
-  
     endWaitTimer = setInterval(() => {
       const expectedBytes = dumpTotalBytes - 4;
-      const received = dumpRecvBytes;
-      const ratio = expectedBytes > 0 ? received / expectedBytes : 0;
-      const now = Date.now();
-      const timeSinceLast = now - lastDataTime;
-  
-      // ✅ Case 1: fully received
+      const received      = dumpRecvBytes;
+      const ratio         = expectedBytes > 0 ? received / expectedBytes : 0;
+      const timeSinceLast = Date.now() - lastDataTime;
+
       if (received >= expectedBytes) {
-        clearInterval(endWaitTimer);
-        log('📦 All expected data received');
+        clearInterval(endWaitTimer); endWaitTimer = null;
         finishDump(false);
         return;
-    }
+      }
+      if (ratio > 0.95 && timeSinceLast > 300) {
+        clearInterval(endWaitTimer); endWaitTimer = null;
+        log('⚠️ Near-complete (' + (ratio*100).toFixed(1) + '%) — finishing');
+        finishDump(false);
+        return;
+      }
+      if (timeSinceLast > 2000) {
+        clearInterval(endWaitTimer); endWaitTimer = null;
+        log('⚠️ Timeout after END (' + (ratio*100).toFixed(1) + '% received)');
+        finishDump(false);
+      }
+    }, 100);
+    return;
+  }
 
-    // ⚠️ Case 2: very close but stalled
-    if (ratio > 0.95 && timeSinceLast > 300) {
-      clearInterval(endWaitTimer);
-      log(`⚠️ Near-complete (${(ratio*100).toFixed(1)}%) — assuming finished`);
-      finishDump(false);
-      return;
-    }
-
-    // ⛔ Case 3: timeout safety (avoid infinite wait)
-    if (timeSinceLast > 2000) {
-      clearInterval(endWaitTimer);
-      log(`⚠️ Timeout waiting for remaining data (${(ratio*100).toFixed(1)}%)`);
-      finishDump(false);
-    }
-
-  }, 100);
-
-  return;
-}
-  if (text === '##CANCELLED##') { finishDump(true);  return; }
+  if (text === '##CANCELLED##') { finishDump(true); return; }
 
   if (text.startsWith('##ERROR')) {
     log('❌ ' + text.replace(/##/g,''));
+    if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
     inDump = false; dumpCarryOver = new Uint8Array(0);
     showProgress(false);
     document.getElementById('warn-transfer').style.display = 'none';
@@ -437,8 +398,7 @@ function handleControlMessage(text) {
 }
 
 function finishDump(cancelled) {
-  // Flush any carry-over bytes — shouldn't happen on clean finish but be safe
-  if (endWaitTimer) clearInterval(endWaitTimer);
+  if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
   dumpCarryOver = new Uint8Array(0);
   inDump        = false;
 
@@ -454,7 +414,6 @@ function finishDump(cancelled) {
   } else {
     document.getElementById('prog-bar').classList.add('done');
     document.getElementById('prog-bar').style.width = '100%';
-    // Show raw byte count alongside record count so mismatches are visible
     log('✅ Transfer complete — ' + dumpRecords.length.toLocaleString() +
         ' records | ' + fmtBytes(dumpRecvBytes) + ' raw | ' +
         elapsed + 's @ ' + kbps + ' KB/s');
@@ -470,17 +429,23 @@ function finishDump(cancelled) {
 }
 
 // ===================================================================
-// Binary parser — each record in dumpRecords is exactly 37 bytes
+// Binary parser — v1.1.0: reads uint32 time_ms, formats as HH:MM:SS.mmm
 // ===================================================================
+function msToTimestamp(ms) {
+  ms = ms >>> 0;  // treat as unsigned
+  const h   = Math.floor(ms / 3600000); ms %= 3600000;
+  const m   = Math.floor(ms / 60000);   ms %= 60000;
+  const s   = Math.floor(ms / 1000);    ms %= 1000;
+  return pad2(h)+':'+pad2(m)+':'+pad2(s)+'.'+String(ms).padStart(3,'0');
+}
+
 function parseBinaryToRows() {
   const rows = [];
   for (const rec of dumpRecords) {
     if (rec.length !== RECORD_SIZE || rec[OFF_SYNC] !== SYNC_BYTE) continue;
     const buf  = rec.buffer.slice(rec.byteOffset, rec.byteOffset + RECORD_SIZE);
     const view = new DataView(buf);
-    const hour     = view.getUint8(OFF_HOUR);
-    const minute   = view.getUint8(OFF_MINUTE);
-    const second   = view.getUint8(OFF_SECOND);
+    const time_ms  = view.getUint32(OFF_TIME_MS,  true);
     const gpsValid = view.getUint8(OFF_GPS_VALID) === 1;
     const lat_e6   = view.getInt32(OFF_LAT_E6,    true);
     const lon_e6   = view.getInt32(OFF_LON_E6,    true);
@@ -491,7 +456,7 @@ function parseBinaryToRows() {
     const pitch    = view.getFloat32(OFF_PITCH,   true);
     const yaw      = view.getFloat32(OFF_YAW,     true);
     rows.push([
-      pad2(hour)+':'+pad2(minute)+':'+pad2(second),
+      msToTimestamp(time_ms),
       gpsValid ? (lat_e6/1e6).toFixed(6) : '',
       gpsValid ? (lon_e6/1e6).toFixed(6) : '',
       accelX.toFixed(4), accelY.toFixed(4), accelZ.toFixed(4),
@@ -622,14 +587,14 @@ function showProgress(show) {
 }
 
 function updateProgress() {
-  // Use raw byte count for progress bar (most accurate reflection of what's arrived)
-  const pct     = dumpTotalBytes > 0 ? (dumpRecvBytes / (dumpTotalBytes - 4) * 100) : 0;
-  const elapsed = (Date.now() - dumpStartTime) / 1000;
-  const kbps    = elapsed > 0 ? (dumpRecvBytes / 1024 / elapsed) : 0;
+  const dataBytes = dumpTotalBytes > 4 ? dumpTotalBytes - 4 : 0;
+  const pct       = dataBytes > 0 ? (dumpRecvBytes / dataBytes * 100) : 0;
+  const elapsed   = (Date.now() - dumpStartTime) / 1000;
+  const kbps      = elapsed > 0 ? (dumpRecvBytes / 1024 / elapsed) : 0;
   dumpSpeedSmooth = dumpSpeedSmooth * 0.85 + kbps * 0.15;
-  const rem = dumpSpeedSmooth > 0 ? ((dumpTotalBytes - 4 - dumpRecvBytes) / 1024 / dumpSpeedSmooth) : 0;
+  const rem = dumpSpeedSmooth > 0 ? ((dataBytes - dumpRecvBytes) / 1024 / dumpSpeedSmooth) : 0;
   document.getElementById('prog-bar').style.width = Math.min(pct, 99) + '%';
-  document.getElementById('ps-recv').textContent  = fmtBytes(dumpRecvBytes) + ' / ' + fmtBytes(dumpTotalBytes - 4);
+  document.getElementById('ps-recv').textContent  = fmtBytes(dumpRecvBytes) + ' / ' + fmtBytes(dataBytes);
   document.getElementById('ps-rows').textContent  = dumpRecords.length.toLocaleString();
   document.getElementById('ps-eta').textContent   = rem > 0 ? fmtTime(rem) : '…';
 }
@@ -637,7 +602,6 @@ function updateProgress() {
 function updateFileInfo(bytes, rows) {
   document.getElementById('info-size').textContent = bytes > 0 ? fmtBytes(bytes) : '—';
   document.getElementById('info-rows').textContent = rows  > 0 ? rows.toLocaleString() : '—';
-  // ETA: number of data bytes / 37 bytes per record × 2ms per record
   const dataBytes = bytes > 4 ? bytes - 4 : 0;
   const etaSec    = dataBytes > 0 ? Math.ceil(dataBytes / RECORD_SIZE) * 0.002 : 0;
   document.getElementById('info-eta').textContent = etaSec > 0 ? '~' + fmtTime(etaSec) : '—';
