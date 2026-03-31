@@ -96,7 +96,7 @@
   }
   .progress-bar {
     height: 100%; background: var(--accent);
-    border-radius: 6px; width: 0%; transition: width 0.4s ease;
+    border-radius: 6px; width: 0%; transition: width 0.15s ease;
   }
   .progress-bar.done { background: var(--green); }
   .progress-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 8px; }
@@ -182,8 +182,7 @@
   <div class="card-title">Transfer &amp; Export</div>
 
   <div class="warn-box" id="warn-transfer">
-    ⚠️ SD logging is <strong>paused</strong> while transferring.
-    Stop logging first for best results.
+    ⚡ Transferring at full speed — all sensors suspended on ESP32.
   </div>
 
   <div class="progress-wrap" id="prog-wrap" style="display:none">
@@ -252,10 +251,10 @@ const OFF_YAW       = 33;
 // ===================================================================
 // App state
 // ===================================================================
-let device     = null;
-let notifyChar = null;
-let writeChar  = null;
-let logState   = 'OFF';
+let device      = null;
+let notifyChar  = null;
+let writeChar   = null;
+let logState    = 'OFF';
 let isConnected = false;
 
 let inDump          = false;
@@ -316,20 +315,22 @@ function disconnectBLE() {
 function onDisconnected() {
   log('⚠️ Disconnected.');
   isConnected = false;
+  inDump      = false;
   setDot('ble', 'red', 'Off');
   setDot('log', '', '—');
   setDot('gps', '', '—');
   setDot('sd',  '', '—');
   document.getElementById('btn-connect').disabled    = false;
   document.getElementById('btn-disconnect').disabled = true;
-  inDump   = false;
   logState = 'OFF';
+  showProgress(false);
+  document.getElementById('warn-transfer').style.display = 'none';
   updateAllButtons();
   updateLogBanner();
 }
 
 // ===================================================================
-// Master button update — single source of truth
+// Master button update
 // ===================================================================
 function updateAllButtons() {
   const c = isConnected;
@@ -345,28 +346,20 @@ function updateAllButtons() {
 // ===================================================================
 // Incoming data handler
 //
-// FIX: Previous version routed by first byte where '#' (0x23) = ASCII
-// and anything else = binary. This was wrong — STATUS packets begin
-// with 'S' (0x53), not '#', so they were silently discarded as binary.
-//
-// Correct routing logic:
-//   - During a dump, binary record packets have first byte 0xAA (SYNC)
-//     or 0x45 ('E', start of ESPB file header). These are binary.
-//   - Everything else is an ASCII control message and must be decoded
-//     as text regardless of whether a dump is in progress.
+// Routing logic:
+//   Binary records have first byte 0xAA (sync) or 0x45 ('E' = ESPB
+//   header). Everything else is an ASCII control message.
+//   This correctly handles STATUS packets (first byte 'S' = 0x53)
+//   arriving at any time including during a dump.
 // ===================================================================
 function onData(event) {
   const dv    = event.target.value;
   const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
   const first = bytes[0];
 
-  // Binary data only if we're in a dump AND first byte is SYNC (0xAA)
-  // or the ESPB file header magic ('E' = 0x45)
   if (inDump && (first === SYNC_BYTE || first === FILE_MAGIC[0])) {
     handleBinaryChunk(bytes);
   } else {
-    // Everything else — including STATUS, ##START##, ##END##, ##LOG_*##
-    // — is ASCII text. Decode and handle regardless of dump state.
     handleControlMessage(new TextDecoder().decode(dv).trim());
   }
 }
@@ -376,7 +369,7 @@ function onData(event) {
 // ===================================================================
 function handleControlMessage(text) {
 
-  // STATUS,LOGGING|PAUSED|OFF,GPS_OK|GPS_NO_FIX,SD_OK|SD_FAIL,bytes,rows
+  // STATUS,STATE,GPS,SD,bytes,rows
   if (text.startsWith('STATUS,')) {
     const p     = text.split(',');
     const state = p[1];
@@ -385,16 +378,19 @@ function handleControlMessage(text) {
     const bytes = parseInt(p[4]) || 0;
     const rows  = parseInt(p[5]) || 0;
 
+    // Only update GPS/SD dots when NOT mid-dump
+    // (ESP32 sends no STATUS during dump — but just in case)
+    if (!inDump) {
+      setDot('gps', gpsOk ? 'green' : 'orange', gpsOk ? 'Fix' : 'No fix');
+      setDot('sd',  sdOk  ? 'green' : 'red',    sdOk  ? 'OK'  : 'Failed');
+      updateFileInfo(bytes, rows);
+    }
+
     if (state !== logState) {
       logState = state;
       updateAllButtons();
       updateLogBanner();
     }
-
-    setDot('gps', gpsOk ? 'green' : 'orange', gpsOk ? 'Fix' : 'No fix');
-    setDot('sd',  sdOk  ? 'green' : 'red',    sdOk  ? 'OK'  : 'Failed');
-
-    if (!inDump) updateFileInfo(bytes, rows);
     return;
   }
 
@@ -427,7 +423,8 @@ function handleControlMessage(text) {
     showProgress(true);
     document.getElementById('warn-transfer').style.display = 'block';
     updateAllButtons();
-    log('📡 Binary transfer started — ' + fmtBytes(dumpTotalBytes));
+    log('📡 Transfer started — ' + fmtBytes(dumpTotalBytes));
+    log('   ESP32 sensors suspended for max speed');
     return;
   }
 
@@ -436,6 +433,7 @@ function handleControlMessage(text) {
     const totalBytes = dumpChunksList.reduce((a, c) => a + c.length, 0);
     dumpLineCount    = Math.max(0, Math.floor((totalBytes - 4) / RECORD_SIZE));
     const elapsed    = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
+    const kbps       = ((dumpRecvBytes / 1024) / parseFloat(elapsed)).toFixed(1);
     document.getElementById('prog-bar').classList.add('done');
     document.getElementById('prog-bar').style.width        = '100%';
     document.getElementById('warn-transfer').style.display = 'none';
@@ -443,7 +441,8 @@ function handleControlMessage(text) {
     document.getElementById('btn-save-bin').disabled = false;
     updateAllButtons();
     updateFileInfo(dumpRecvBytes, dumpLineCount);
-    log('✅ Transfer complete — ' + dumpLineCount.toLocaleString() + ' records in ' + elapsed + 's');
+    log('✅ Transfer complete — ' + dumpLineCount.toLocaleString() +
+        ' records in ' + elapsed + 's (' + kbps + ' KB/s)');
     if (isIOS) log('📱 Tap Save as CSV or Save raw .bin to open Share Sheet');
     return;
   }
@@ -558,7 +557,7 @@ function saveCSV() {
   const rows = parseBinaryToRows();
   if (!rows.length) { log('❌ No valid records found'); return; }
   const csv  = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n' +
-                rows.map(r => r.join(',')).join('\n');
+               rows.map(r => r.join(',')).join('\n');
   const date = new Date().toISOString().slice(0, 10);
   download(csv, date + '.csv', 'text/csv');
   log('💾 ' + rows.length.toLocaleString() + ' rows → ' +
@@ -609,7 +608,6 @@ function download(content, filename, mime) {
 async function sendCmd(cmd) {
   if (!writeChar) return;
   try {
-    // Optimistic local update for instant UI response
     if      (cmd === 'START') { logState = 'LOGGING'; }
     else if (cmd === 'PAUSE') { logState = 'PAUSED';  }
     else if (cmd === 'STOP')  { logState = 'OFF';     }
