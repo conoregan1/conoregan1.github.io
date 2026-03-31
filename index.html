@@ -98,7 +98,9 @@
     height: 100%; background: var(--accent);
     border-radius: 6px; width: 0%; transition: width 0.15s ease;
   }
-  .progress-bar.done { background: var(--green); }
+  .progress-bar.done      { background: var(--green); }
+  .progress-bar.cancelled { background: var(--orange); }
+
   .progress-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 8px; }
   .pstat { background: var(--surface2); border-radius: 6px; padding: 6px 8px; text-align: center; }
   .pstat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -194,16 +196,20 @@
     <div class="pstat"><div class="pstat-label">ETA</div>     <div class="pstat-val" id="ps-eta">—</div></div>
   </div>
 
-  <button class="btn btn-blue"      id="btn-stop-dl" onclick="stopAndDownload()" disabled style="margin-bottom:8px">
+  <button class="btn btn-blue"      id="btn-stop-dl"    onclick="stopAndDownload()" disabled style="margin-bottom:8px">
     ⏹💾 Stop &amp; Download
   </button>
-  <button class="btn btn-secondary" id="btn-dump"     onclick="requestDump()"    disabled>
+  <button class="btn btn-secondary" id="btn-dump"        onclick="requestDump()"    disabled>
     📥 Download data.bin from SD
   </button>
-  <button class="btn btn-green"     id="btn-save-csv" onclick="saveCSV()"        disabled>
+  <!-- Cancel button — only visible during a dump -->
+  <button class="btn btn-orange"    id="btn-cancel-dump" onclick="cancelDump()"     style="display:none">
+    ✕ Cancel Download
+  </button>
+  <button class="btn btn-green"     id="btn-save-csv"    onclick="saveCSV()"        disabled>
     💾 Save as CSV (same format as Python output)
   </button>
-  <button class="btn btn-orange"    id="btn-save-bin" onclick="saveBIN()"        disabled>
+  <button class="btn btn-orange"    id="btn-save-bin"    onclick="saveBIN()"        disabled>
     📦 Save raw .bin (for Python script)
   </button>
 
@@ -228,11 +234,11 @@ const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 
 // ===================================================================
-// Binary format constants — must match Arduino sketch exactly
+// Binary format constants — must match Arduino exactly
 // ===================================================================
 const RECORD_SIZE = 37;
 const SYNC_BYTE   = 0xAA;
-const FILE_MAGIC  = [0x45, 0x53, 0x50, 0x42]; // "ESPB"
+const FILE_MAGIC  = [0x45, 0x53, 0x50, 0x42];
 
 const OFF_SYNC      = 0;
 const OFF_HOUR      = 1;
@@ -290,18 +296,15 @@ async function connectBLE() {
     writeChar  = await service.getCharacteristic(WRITE_CHAR_UUID);
     await notifyChar.startNotifications();
     notifyChar.addEventListener('characteristicvaluechanged', onData);
-
     isConnected = true;
     setDot('ble', 'green', 'Connected');
     setDot('gps', 'waiting', 'Waiting…');
     setDot('sd',  'waiting', 'Waiting…');
     log('✅ Connected to ' + device.name);
     if (isIOS) log('📱 iOS — files will open Share Sheet');
-
     document.getElementById('btn-connect').disabled    = true;
     document.getElementById('btn-disconnect').disabled = false;
     updateAllButtons();
-
   } catch (e) {
     log('❌ ' + e.message);
     setDot('ble', 'red', 'Failed');
@@ -317,11 +320,10 @@ function onDisconnected() {
   isConnected = false;
   inDump      = false;
   setDot('ble', 'red', 'Off');
-  setDot('log', '', '—');
-  setDot('gps', '', '—');
-  setDot('sd',  '', '—');
+  setDot('log', '', '—'); setDot('gps', '', '—'); setDot('sd', '', '—');
   document.getElementById('btn-connect').disabled    = false;
   document.getElementById('btn-disconnect').disabled = true;
+  document.getElementById('btn-cancel-dump').style.display = 'none';
   logState = 'OFF';
   showProgress(false);
   document.getElementById('warn-transfer').style.display = 'none';
@@ -335,29 +337,27 @@ function onDisconnected() {
 function updateAllButtons() {
   const c = isConnected;
   const d = inDump;
-  document.getElementById('btn-start').disabled   = !c || d || logState === 'LOGGING';
-  document.getElementById('btn-pause').disabled   = !c || d || logState !== 'LOGGING';
-  document.getElementById('btn-stop').disabled    = !c || d || logState === 'OFF';
-  document.getElementById('btn-stop-dl').disabled = !c || d;
-  document.getElementById('btn-dump').disabled    = !c || d;
-  document.getElementById('btn-clear').disabled   = !c || d;
+  document.getElementById('btn-start').disabled      = !c || d || logState === 'LOGGING';
+  document.getElementById('btn-pause').disabled      = !c || d || logState !== 'LOGGING';
+  document.getElementById('btn-stop').disabled       = !c || d || logState === 'OFF';
+  document.getElementById('btn-stop-dl').disabled    = !c || d;
+  document.getElementById('btn-dump').disabled       = !c || d;
+  document.getElementById('btn-clear').disabled      = !c || d;
+  // Cancel button: only visible while a dump is in progress
+  document.getElementById('btn-cancel-dump').style.display = (c && d) ? 'flex' : 'none';
 }
 
 // ===================================================================
 // Incoming data handler
-//
-// Routing logic:
-//   Binary records have first byte 0xAA (sync) or 0x45 ('E' = ESPB
-//   header). Everything else is an ASCII control message.
-//   This correctly handles STATUS packets (first byte 'S' = 0x53)
-//   arriving at any time including during a dump.
 // ===================================================================
 function onData(event) {
   const dv    = event.target.value;
   const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
   const first = bytes[0];
 
-  if (inDump && (first === SYNC_BYTE || first === FILE_MAGIC[0])) {
+  // Binary: sync byte (0xAA) during dump
+  // Everything else is ASCII text
+  if (inDump && first === SYNC_BYTE) {
     handleBinaryChunk(bytes);
   } else {
     handleControlMessage(new TextDecoder().decode(dv).trim());
@@ -369,7 +369,6 @@ function onData(event) {
 // ===================================================================
 function handleControlMessage(text) {
 
-  // STATUS,STATE,GPS,SD,bytes,rows
   if (text.startsWith('STATUS,')) {
     const p     = text.split(',');
     const state = p[1];
@@ -377,40 +376,19 @@ function handleControlMessage(text) {
     const sdOk  = p[3] === 'SD_OK';
     const bytes = parseInt(p[4]) || 0;
     const rows  = parseInt(p[5]) || 0;
-
-    // Only update GPS/SD dots when NOT mid-dump
-    // (ESP32 sends no STATUS during dump — but just in case)
     if (!inDump) {
       setDot('gps', gpsOk ? 'green' : 'orange', gpsOk ? 'Fix' : 'No fix');
       setDot('sd',  sdOk  ? 'green' : 'red',    sdOk  ? 'OK'  : 'Failed');
       updateFileInfo(bytes, rows);
     }
-
-    if (state !== logState) {
-      logState = state;
-      updateAllButtons();
-      updateLogBanner();
-    }
+    if (state !== logState) { logState = state; updateAllButtons(); updateLogBanner(); }
     return;
   }
 
-  if (text === '##LOG_STARTED##') {
-    logState = 'LOGGING';
-    log('▶ Logging started');
-    updateAllButtons(); updateLogBanner(); return;
-  }
-  if (text === '##LOG_PAUSED##') {
-    logState = 'PAUSED';
-    log('⏸ Logging paused');
-    updateAllButtons(); updateLogBanner(); return;
-  }
-  if (text === '##LOG_STOPPED##') {
-    logState = 'OFF';
-    log('⏹ Logging stopped');
-    updateAllButtons(); updateLogBanner(); return;
-  }
+  if (text === '##LOG_STARTED##') { logState='LOGGING'; log('▶ Logging started'); updateAllButtons(); updateLogBanner(); return; }
+  if (text === '##LOG_PAUSED##')  { logState='PAUSED';  log('⏸ Logging paused');  updateAllButtons(); updateLogBanner(); return; }
+  if (text === '##LOG_STOPPED##') { logState='OFF';     log('⏹ Logging stopped'); updateAllButtons(); updateLogBanner(); return; }
 
-  // Dump start: ##START,<totalBytes>,BIN##
   if (text.startsWith('##START,') && text.endsWith(',BIN##')) {
     const m = text.match(/##START,(\d+),BIN##/);
     dumpTotalBytes  = m ? parseInt(m[1]) : 0;
@@ -429,21 +407,12 @@ function handleControlMessage(text) {
   }
 
   if (text === '##END##') {
-    inDump = false;
-    const totalBytes = dumpChunksList.reduce((a, c) => a + c.length, 0);
-    dumpLineCount    = Math.max(0, Math.floor((totalBytes - 4) / RECORD_SIZE));
-    const elapsed    = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
-    const kbps       = ((dumpRecvBytes / 1024) / parseFloat(elapsed)).toFixed(1);
-    document.getElementById('prog-bar').classList.add('done');
-    document.getElementById('prog-bar').style.width        = '100%';
-    document.getElementById('warn-transfer').style.display = 'none';
-    document.getElementById('btn-save-csv').disabled = false;
-    document.getElementById('btn-save-bin').disabled = false;
-    updateAllButtons();
-    updateFileInfo(dumpRecvBytes, dumpLineCount);
-    log('✅ Transfer complete — ' + dumpLineCount.toLocaleString() +
-        ' records in ' + elapsed + 's (' + kbps + ' KB/s)');
-    if (isIOS) log('📱 Tap Save as CSV or Save raw .bin to open Share Sheet');
+    finishDump(false);
+    return;
+  }
+
+  if (text === '##CANCELLED##') {
+    finishDump(true);
     return;
   }
 
@@ -466,13 +435,45 @@ function handleControlMessage(text) {
   }
 }
 
+function finishDump(cancelled) {
+  inDump = false;
+  const totalBytes = dumpChunksList.reduce((a, c) => a + c.length, 0);
+  // Each chunk is one raw record (37 bytes) — no file header in stream
+  dumpLineCount = Math.floor(totalBytes / RECORD_SIZE);
+  const elapsed = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
+  const kbps    = ((totalBytes / 1024) / parseFloat(elapsed)).toFixed(1);
+
+  document.getElementById('warn-transfer').style.display = 'none';
+  document.getElementById('btn-cancel-dump').style.display = 'none';
+
+  if (cancelled) {
+    document.getElementById('prog-bar').classList.add('cancelled');
+    log('⚠️ Download cancelled — ' + dumpLineCount.toLocaleString() +
+        ' records received so far');
+  } else {
+    document.getElementById('prog-bar').classList.add('done');
+    document.getElementById('prog-bar').style.width = '100%';
+    log('✅ Transfer complete — ' + dumpLineCount.toLocaleString() +
+        ' records in ' + elapsed + 's (' + kbps + ' KB/s)');
+    if (isIOS) log('📱 Tap Save as CSV or Save raw .bin to open Share Sheet');
+  }
+
+  if (dumpLineCount > 0) {
+    document.getElementById('btn-save-csv').disabled = false;
+    document.getElementById('btn-save-bin').disabled = false;
+  }
+  updateAllButtons();
+  updateFileInfo(dumpRecvBytes, dumpLineCount);
+}
+
 // ===================================================================
 // Binary chunk handler
+// Each chunk IS one 37-byte record — no assembly needed
 // ===================================================================
 function handleBinaryChunk(bytes) {
   dumpChunksList.push(new Uint8Array(bytes));
   dumpRecvBytes += bytes.length;
-  dumpLineCount  = Math.max(0, Math.floor((dumpRecvBytes - 4) / RECORD_SIZE));
+  dumpLineCount  = Math.floor(dumpRecvBytes / RECORD_SIZE);
   updateProgress();
 }
 
@@ -480,24 +481,15 @@ function handleBinaryChunk(bytes) {
 // Binary parser
 // ===================================================================
 function parseBinaryToRows() {
-  const totalLen = dumpChunksList.reduce((a, c) => a + c.length, 0);
-  const all      = new Uint8Array(totalLen);
-  let   pos      = 0;
-  for (const chunk of dumpChunksList) { all.set(chunk, pos); pos += chunk.length; }
-
-  let offset = 0;
-  if (all.length >= 4 &&
-      all[0] === FILE_MAGIC[0] && all[1] === FILE_MAGIC[1] &&
-      all[2] === FILE_MAGIC[2] && all[3] === FILE_MAGIC[3]) {
-    offset = 4;
-  }
-
   const rows = [];
-  while (offset + RECORD_SIZE <= all.length) {
-    if (all[offset + OFF_SYNC] !== SYNC_BYTE) { offset++; continue; }
+
+  for (const chunk of dumpChunksList) {
+    // Each chunk should be exactly RECORD_SIZE bytes
+    if (chunk.length !== RECORD_SIZE) continue;
+    if (chunk[OFF_SYNC] !== SYNC_BYTE)  continue;
 
     const buf  = new ArrayBuffer(RECORD_SIZE);
-    new Uint8Array(buf).set(all.subarray(offset, offset + RECORD_SIZE));
+    new Uint8Array(buf).set(chunk);
     const view = new DataView(buf);
 
     const hour     = view.getUint8(OFF_HOUR);
@@ -520,8 +512,6 @@ function parseBinaryToRows() {
       accelX.toFixed(4), accelY.toFixed(4), accelZ.toFixed(4),
       roll.toFixed(2), pitch.toFixed(2), yaw.toFixed(2)
     ]);
-
-    offset += RECORD_SIZE;
   }
   return rows;
 }
@@ -566,9 +556,12 @@ function saveCSV() {
 
 function saveBIN() {
   if (!dumpChunksList.length) { log('No data to save.'); return; }
-  const totalLen = dumpChunksList.reduce((a, c) => a + c.length, 0);
+  // Reassemble with ESPB header for compatibility with Python script
+  const hdr      = new Uint8Array([0x45, 0x53, 0x50, 0x42]);
+  const totalLen = 4 + dumpChunksList.reduce((a, c) => a + c.length, 0);
   const all      = new Uint8Array(totalLen);
-  let pos = 0;
+  all.set(hdr, 0);
+  let pos = 4;
   for (const chunk of dumpChunksList) { all.set(chunk, pos); pos += chunk.length; }
   const date = new Date().toISOString().slice(0, 10);
   download(all, date + '_data.bin', 'application/octet-stream');
@@ -603,7 +596,7 @@ function download(content, filename, mime) {
 }
 
 // ===================================================================
-// ESP32 commands
+// ESP32 Commands
 // ===================================================================
 async function sendCmd(cmd) {
   if (!writeChar) return;
@@ -611,8 +604,7 @@ async function sendCmd(cmd) {
     if      (cmd === 'START') { logState = 'LOGGING'; }
     else if (cmd === 'PAUSE') { logState = 'PAUSED';  }
     else if (cmd === 'STOP')  { logState = 'OFF';     }
-    updateAllButtons();
-    updateLogBanner();
+    updateAllButtons(); updateLogBanner();
     await writeChar.writeValue(new TextEncoder().encode(cmd));
     log('📤 ' + cmd + ' sent');
   } catch (e) { log('❌ ' + e.message); }
@@ -623,10 +615,16 @@ async function requestDump() {
   try {
     await writeChar.writeValue(new TextEncoder().encode('DUMP'));
     log('📤 DUMP command sent…');
-  } catch (e) {
-    log('❌ ' + e.message);
-    updateAllButtons();
-  }
+  } catch (e) { log('❌ ' + e.message); updateAllButtons(); }
+}
+
+async function cancelDump() {
+  if (!writeChar) return;
+  try {
+    await writeChar.writeValue(new TextEncoder().encode('CANCELDUMP'));
+    log('📤 Cancel sent — waiting for ESP32 to stop…');
+    document.getElementById('btn-cancel-dump').disabled = true;
+  } catch (e) { log('❌ ' + e.message); }
 }
 
 async function stopAndDownload() {
@@ -656,8 +654,9 @@ function showProgress(show) {
   document.getElementById('prog-wrap').style.display  = show ? 'block' : 'none';
   document.getElementById('prog-stats').style.display = show ? 'grid'  : 'none';
   if (!show) {
-    document.getElementById('prog-bar').style.width = '0%';
-    document.getElementById('prog-bar').classList.remove('done');
+    const bar = document.getElementById('prog-bar');
+    bar.style.width = '0%';
+    bar.classList.remove('done', 'cancelled');
   }
 }
 
@@ -677,7 +676,7 @@ function updateProgress() {
 function updateFileInfo(bytes, rows) {
   document.getElementById('info-size').textContent = bytes > 0 ? fmtBytes(bytes) : '—';
   document.getElementById('info-rows').textContent = rows  > 0 ? rows.toLocaleString() : '—';
-  const etaSec = bytes > 0 ? bytes / 1024 / 40 : 0;
+  const etaSec = bytes > 0 ? bytes / 1024 / 18 : 0;  // ~18 KB/s at 37 bytes/2ms
   document.getElementById('info-eta').textContent  = etaSec > 0 ? '~' + fmtTime(etaSec) : '—';
 }
 
