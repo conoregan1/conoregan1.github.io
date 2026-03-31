@@ -87,7 +87,7 @@
 
 <div class="title-row">
   <h1>ESP32 <span>Sensor Logger</span></h1>
-  <span class="version">v1.1.0</span>
+  <span class="version">v1.1.1</span>
 </div>
 <p class="sub">Edge / Chrome on Windows·Mac·Android &nbsp;·&nbsp; Bluefy on iPhone</p>
 
@@ -146,20 +146,17 @@
 </div>
 
 <script>
-const VERSION = 'v1.1.0';
+const VERSION = 'v1.1.1';
 
 const SERVICE_UUID     = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 
-// ===================================================================
-// v1.1.0 record layout — 38 bytes
-// ===================================================================
 const RECORD_SIZE = 38;
 const SYNC_BYTE   = 0xAA;
 
 const OFF_SYNC      = 0;
-const OFF_TIME_MS   = 1;   // uint32, little-endian — ms since midnight
+const OFF_TIME_MS   = 1;
 const OFF_GPS_VALID = 5;
 const OFF_LAT_E6    = 6;
 const OFF_LON_E6    = 10;
@@ -176,9 +173,6 @@ let writeChar   = null;
 let logState    = 'OFF';
 let isConnected = false;
 
-// ===================================================================
-// Dump state
-// ===================================================================
 let inDump          = false;
 let dumpTotalBytes  = 0;
 let dumpRecvBytes   = 0;
@@ -187,7 +181,6 @@ let dumpStartTime   = 0;
 let dumpSpeedSmooth = 0;
 let dumpCarryOver   = new Uint8Array(0);
 
-// End-wait timer (kept from previous version — handles straggling packets)
 let endSignalReceived = false;
 let lastDataTime      = 0;
 let endWaitTimer      = null;
@@ -229,6 +222,8 @@ async function connectBLE() {
   } catch (e) {
     log('❌ ' + e.message);
     setDot('ble', 'red', 'Failed');
+    // Make sure connect button stays usable after a failed attempt
+    document.getElementById('btn-connect').disabled = false;
   }
 }
 
@@ -236,34 +231,75 @@ function disconnectBLE() {
   if (device && device.gatt.connected) device.gatt.disconnect();
 }
 
+// ===================================================================
+// Disconnection handler
+//
+// FIX: Previously a cancelled dump left inDump=true or buttons in
+// a bad state. Now onDisconnected always does a full clean reset
+// regardless of what state the app was in, so reconnecting via
+// the Connect button always works cleanly.
+// ===================================================================
 function onDisconnected() {
-  log('⚠️ Disconnected.');
+  log('⚠️ Disconnected — tap Connect to reconnect.');
+
+  // Stop any pending end-wait timer
   if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
-  isConnected = false; inDump = false;
-  setDot('ble','red','Off'); setDot('log','','—'); setDot('gps','','—'); setDot('sd','','—');
-  document.getElementById('btn-connect').disabled    = false;
+
+  // If we were mid-dump, finish it as cancelled so any received
+  // records are still available to save
+  if (inDump) {
+    inDump        = false;
+    dumpCarryOver = new Uint8Array(0);
+    document.getElementById('warn-transfer').style.display = 'none';
+    if (dumpRecords.length > 0) {
+      document.getElementById('btn-save-csv').disabled = false;
+      document.getElementById('btn-save-bin').disabled = false;
+      log('💾 ' + dumpRecords.length.toLocaleString() + ' records received before disconnect — you can still save them');
+    }
+    const bar = document.getElementById('prog-bar');
+    bar.classList.remove('done');
+    bar.classList.add('cancelled');
+  }
+
+  // Full connection state reset
+  isConnected = false;
+  setDot('ble', 'red', 'Off');
+  setDot('log', '', '—');
+  setDot('gps', '', '—');
+  setDot('sd',  '', '—');
+
+  // Reset all button states cleanly
+  document.getElementById('btn-connect').disabled    = false;  // ← always re-enable
   document.getElementById('btn-disconnect').disabled = true;
-  document.getElementById('btn-cancel-dump').style.display = 'none';
-  logState = 'OFF';
-  showProgress(false);
-  document.getElementById('warn-transfer').style.display = 'none';
-  updateAllButtons(); updateLogBanner();
+  document.getElementById('btn-cancel-dump').style.display  = 'none';
+  document.getElementById('btn-cancel-dump').disabled       = false; // ← re-enable for next time
+
+  // Keep logState as-is — the ESP32 continues logging even while
+  // disconnected, so when we reconnect the STATUS packet will update it
+  updateAllButtons();
+  updateLogBanner();
 }
 
+// ===================================================================
+// Single master button update function
+// Never touches btn-cancel-dump visibility or btn-connect disabled
+// state — those are managed separately to avoid conflicts.
+// ===================================================================
 function updateAllButtons() {
-  const c = isConnected, d = inDump;
-  document.getElementById('btn-start').disabled      = !c || d || logState === 'LOGGING';
-  document.getElementById('btn-pause').disabled      = !c || d || logState !== 'LOGGING';
-  document.getElementById('btn-stop').disabled       = !c || d || logState === 'OFF';
-  document.getElementById('btn-stop-dl').disabled    = !c || d;
-  document.getElementById('btn-dump').disabled       = !c || d;
-  document.getElementById('btn-clear').disabled      = !c || d;
+  const c = isConnected;
+  const d = inDump;
+  document.getElementById('btn-start').disabled   = !c || d || logState === 'LOGGING';
+  document.getElementById('btn-pause').disabled   = !c || d || logState !== 'LOGGING';
+  document.getElementById('btn-stop').disabled    = !c || d || logState === 'OFF';
+  document.getElementById('btn-stop-dl').disabled = !c || d;
+  document.getElementById('btn-dump').disabled    = !c || d;
+  document.getElementById('btn-clear').disabled   = !c || d;
+  // Cancel button: visible only when connected AND mid-dump
   document.getElementById('btn-cancel-dump').style.display = (c && d) ? 'flex' : 'none';
 }
 
 // ===================================================================
-// Incoming data handler
-// Carry-over buffer handles packets of any size (coalesced or split).
+// Incoming data — carry-over buffer handles any packet size
 // ===================================================================
 function onData(event) {
   const dv    = event.target.value;
@@ -295,11 +331,9 @@ function onData(event) {
         i++;
       }
     }
-
     if (i < combined.length) {
       dumpCarryOver = new Uint8Array(combined.subarray(i));
     }
-
     updateProgress();
   } else {
     handleControlMessage(new TextDecoder().decode(dv).trim());
@@ -328,16 +362,16 @@ function handleControlMessage(text) {
 
   if (text.startsWith('##START,') && text.endsWith(',BIN##')) {
     const m = text.match(/##START,(\d+),BIN##/);
-    dumpTotalBytes     = m ? parseInt(m[1]) : 0;
-    dumpRecvBytes      = 0;
-    dumpRecords        = [];
-    dumpCarryOver      = new Uint8Array(0);
-    dumpStartTime      = Date.now();
-    dumpSpeedSmooth    = 0;
-    endSignalReceived  = false;
-    lastDataTime       = Date.now();
+    dumpTotalBytes    = m ? parseInt(m[1]) : 0;
+    dumpRecvBytes     = 0;
+    dumpRecords       = [];
+    dumpCarryOver     = new Uint8Array(0);
+    dumpStartTime     = Date.now();
+    dumpSpeedSmooth   = 0;
+    endSignalReceived = false;
+    lastDataTime      = Date.now();
     if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
-    inDump             = true;
+    inDump = true;
     showProgress(true);
     document.getElementById('warn-transfer').style.display = 'block';
     updateAllButtons();
@@ -349,26 +383,19 @@ function handleControlMessage(text) {
   if (text === '##END##') {
     endSignalReceived = true;
     log('📥 END signal received — waiting for in-flight packets…');
-
     if (endWaitTimer) clearInterval(endWaitTimer);
     endWaitTimer = setInterval(() => {
       const expectedBytes = dumpTotalBytes - 4;
-      const received      = dumpRecvBytes;
-      const ratio         = expectedBytes > 0 ? received / expectedBytes : 0;
+      const ratio         = expectedBytes > 0 ? dumpRecvBytes / expectedBytes : 0;
       const timeSinceLast = Date.now() - lastDataTime;
-
-      if (received >= expectedBytes) {
+      if (dumpRecvBytes >= expectedBytes) {
         clearInterval(endWaitTimer); endWaitTimer = null;
         finishDump(false);
-        return;
-      }
-      if (ratio > 0.95 && timeSinceLast > 300) {
+      } else if (ratio > 0.95 && timeSinceLast > 300) {
         clearInterval(endWaitTimer); endWaitTimer = null;
         log('⚠️ Near-complete (' + (ratio*100).toFixed(1) + '%) — finishing');
         finishDump(false);
-        return;
-      }
-      if (timeSinceLast > 2000) {
+      } else if (timeSinceLast > 2000) {
         clearInterval(endWaitTimer); endWaitTimer = null;
         log('⚠️ Timeout after END (' + (ratio*100).toFixed(1) + '% received)');
         finishDump(false);
@@ -377,15 +404,20 @@ function handleControlMessage(text) {
     return;
   }
 
-  if (text === '##CANCELLED##') { finishDump(true); return; }
+  if (text === '##CANCELLED##') {
+    finishDump(true);
+    return;
+  }
 
   if (text.startsWith('##ERROR')) {
     log('❌ ' + text.replace(/##/g,''));
     if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
-    inDump = false; dumpCarryOver = new Uint8Array(0);
+    inDump = false;
+    dumpCarryOver = new Uint8Array(0);
     showProgress(false);
     document.getElementById('warn-transfer').style.display = 'none';
-    updateAllButtons(); return;
+    updateAllButtons();
+    return;
   }
 
   if (text === '##CLEARED##') {
@@ -397,6 +429,10 @@ function handleControlMessage(text) {
   }
 }
 
+// ===================================================================
+// finishDump — FIX: always re-enables cancel button so it works
+// next time, and always calls updateAllButtons() to restore UI.
+// ===================================================================
 function finishDump(cancelled) {
   if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
   dumpCarryOver = new Uint8Array(0);
@@ -405,8 +441,10 @@ function finishDump(cancelled) {
   const elapsed = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
   const kbps    = ((dumpRecvBytes / 1024) / parseFloat(elapsed)).toFixed(1);
 
-  document.getElementById('warn-transfer').style.display  = 'none';
+  document.getElementById('warn-transfer').style.display   = 'none';
+  // Hide cancel button AND re-enable it so it works next time
   document.getElementById('btn-cancel-dump').style.display = 'none';
+  document.getElementById('btn-cancel-dump').disabled      = false;
 
   if (cancelled) {
     document.getElementById('prog-bar').classList.add('cancelled');
@@ -424,18 +462,20 @@ function finishDump(cancelled) {
     document.getElementById('btn-save-csv').disabled = false;
     document.getElementById('btn-save-bin').disabled = false;
   }
+
+  // Restore all other buttons based on current connection state
   updateAllButtons();
   updateFileInfo(dumpRecvBytes, dumpRecords.length);
 }
 
 // ===================================================================
-// Binary parser — v1.1.0: reads uint32 time_ms, formats as HH:MM:SS.mmm
+// Binary parser — v1.1.x: uint32 time_ms at offset 1
 // ===================================================================
 function msToTimestamp(ms) {
-  ms = ms >>> 0;  // treat as unsigned
-  const h   = Math.floor(ms / 3600000); ms %= 3600000;
-  const m   = Math.floor(ms / 60000);   ms %= 60000;
-  const s   = Math.floor(ms / 1000);    ms %= 1000;
+  ms = ms >>> 0;
+  const h = Math.floor(ms / 3600000); ms %= 3600000;
+  const m = Math.floor(ms / 60000);   ms %= 60000;
+  const s = Math.floor(ms / 1000);    ms %= 1000;
   return pad2(h)+':'+pad2(m)+':'+pad2(s)+'.'+String(ms).padStart(3,'0');
 }
 
@@ -553,13 +593,20 @@ async function requestDump() {
   } catch(e) { log('❌ '+e.message); updateAllButtons(); }
 }
 
+// FIX: cancelDump no longer sets disabled=true permanently.
+// It sends the command and greys out the button temporarily,
+// but finishDump() always re-enables it when the cancel completes.
 async function cancelDump() {
   if (!writeChar) return;
   try {
-    await writeChar.writeValue(new TextEncoder().encode('CANCELDUMP'));
-    log('📤 Cancel sent — waiting for ESP32 to stop…');
     document.getElementById('btn-cancel-dump').disabled = true;
-  } catch(e) { log('❌ '+e.message); }
+    await writeChar.writeValue(new TextEncoder().encode('CANCELDUMP'));
+    log('📤 Cancel sent — waiting for ESP32 to confirm…');
+  } catch(e) {
+    log('❌ '+e.message);
+    // Re-enable immediately if the write itself failed
+    document.getElementById('btn-cancel-dump').disabled = false;
+  }
 }
 
 async function stopAndDownload() {
