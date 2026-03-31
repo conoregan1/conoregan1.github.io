@@ -24,32 +24,19 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 15px; line-height: 1.6; padding: 16px;
   }
-  .title-row {
-    display: flex; align-items: baseline; justify-content: space-between;
-    margin-bottom: 2px;
-  }
+  .title-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2px; }
   h1 { font-size: 1.25rem; font-weight: 700; }
   h1 span { color: var(--accent); }
   .version { font-size: 0.72rem; font-family: var(--mono); color: var(--muted); letter-spacing: 0.04em; }
   .sub { color: var(--muted); font-size: 0.8rem; margin-bottom: 18px; }
 
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px; margin-bottom: 12px;
-  }
-  .card-title {
-    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
-  }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .card-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
 
   .status-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
   .status-cell { background: var(--surface2); border-radius: 8px; padding: 10px 6px; text-align: center; }
   .status-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
-  .status-dot {
-    width: 12px; height: 12px; border-radius: 50%;
-    background: var(--muted); margin: 0 auto 4px;
-    transition: background 0.3s, box-shadow 0.3s;
-  }
+  .status-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); margin: 0 auto 4px; transition: background 0.3s, box-shadow 0.3s; }
   .status-dot.green   { background: var(--green);  box-shadow: 0 0 8px var(--green); }
   .status-dot.orange  { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
   .status-dot.red     { background: var(--red);    box-shadow: 0 0 6px var(--red); }
@@ -57,20 +44,12 @@
   @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
   .status-val { font-size: 0.68rem; font-weight: 600; }
 
-  .info-row {
-    display: flex; justify-content: space-between;
-    font-size: 0.82rem; padding: 4px 0; border-bottom: 1px solid var(--border);
-  }
+  .info-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 4px 0; border-bottom: 1px solid var(--border); }
   .info-row:last-child { border-bottom: none; }
   .info-key { color: var(--muted); }
   .info-val { font-family: var(--mono); font-weight: 600; color: var(--accent); }
 
-  .btn {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 13px 16px; border: none; border-radius: 10px;
-    font-size: 0.92rem; font-weight: 600; cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-  }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 16px; border: none; border-radius: 10px; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
   .btn:active { transform: scale(0.97); }
   .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
   .btn + .btn { margin-top: 8px; }
@@ -81,10 +60,7 @@
   .btn-red       { background: #3d1f1f;         color: var(--red);    border: 1px solid #5a2a2a; }
   .btn-blue      { background: #0a1a3a;         color: var(--accent); border: 1px solid #1a3a6a; }
 
-  .state-banner {
-    border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; font-weight: 600;
-    text-align: center; margin-bottom: 10px; transition: background 0.3s, color 0.3s;
-  }
+  .state-banner { border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-bottom: 10px; transition: background 0.3s, color 0.3s; }
   .state-banner.off     { background: var(--surface2); color: var(--muted);  border: 1px solid var(--border); }
   .state-banner.logging { background: #0a2a1e;          color: var(--green);  border: 1px solid #1a5a3a; }
   .state-banner.paused  { background: #2a1f0a;          color: var(--orange); border: 1px solid #5a3a00; }
@@ -99,17 +75,9 @@
   .pstat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
   .pstat-val { font-family: var(--mono); font-size: 0.82rem; font-weight: 600; color: var(--text); margin-top: 2px; }
 
-  #log {
-    font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
-    background: var(--surface2); border-radius: 8px; padding: 10px;
-    height: 140px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
-  }
+  #log { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); background: var(--surface2); border-radius: 8px; padding: 10px; height: 140px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
 
-  .warn-box {
-    background: #2a1f0a; border: 1px solid #5a3a00; border-radius: 8px;
-    padding: 10px 12px; font-size: 0.8rem; color: var(--orange);
-    margin-bottom: 10px; line-height: 1.5; display: none;
-  }
+  .warn-box { background: #2a1f0a; border: 1px solid #5a3a00; border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; color: var(--orange); margin-bottom: 10px; line-height: 1.5; display: none; }
 
   .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .danger-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0 10px; }
@@ -119,34 +87,17 @@
 
 <div class="title-row">
   <h1>ESP32 <span>Sensor Logger</span></h1>
-  <span class="version">v1.0.1</span>
+  <span class="version">v1.0.2</span>
 </div>
 <p class="sub">Edge / Chrome on Windows·Mac·Android &nbsp;·&nbsp; Bluefy on iPhone</p>
 
-<!-- ── Status ─────────────────────────────── -->
 <div class="card">
   <div class="card-title">System Status</div>
   <div class="status-grid">
-    <div class="status-cell">
-      <div class="status-label">Bluetooth</div>
-      <div class="status-dot" id="dot-ble"></div>
-      <div class="status-val" id="val-ble">Off</div>
-    </div>
-    <div class="status-cell">
-      <div class="status-label">Logging</div>
-      <div class="status-dot" id="dot-log"></div>
-      <div class="status-val" id="val-log">—</div>
-    </div>
-    <div class="status-cell">
-      <div class="status-label">GPS Fix</div>
-      <div class="status-dot" id="dot-gps"></div>
-      <div class="status-val" id="val-gps">—</div>
-    </div>
-    <div class="status-cell">
-      <div class="status-label">SD Card</div>
-      <div class="status-dot" id="dot-sd"></div>
-      <div class="status-val" id="val-sd">—</div>
-    </div>
+    <div class="status-cell"><div class="status-label">Bluetooth</div><div class="status-dot" id="dot-ble"></div><div class="status-val" id="val-ble">Off</div></div>
+    <div class="status-cell"><div class="status-label">Logging</div><div class="status-dot" id="dot-log"></div><div class="status-val" id="val-log">—</div></div>
+    <div class="status-cell"><div class="status-label">GPS Fix</div><div class="status-dot" id="dot-gps"></div><div class="status-val" id="val-gps">—</div></div>
+    <div class="status-cell"><div class="status-label">SD Card</div><div class="status-dot" id="dot-sd"></div><div class="status-val" id="val-sd">—</div></div>
   </div>
   <div style="margin-top:10px; display:flex; gap:8px;">
     <button class="btn btn-primary"   id="btn-connect"    onclick="connectBLE()"    style="flex:1">🔵 Connect</button>
@@ -154,7 +105,6 @@
   </div>
 </div>
 
-<!-- ── Logging Control ────────────────────── -->
 <div class="card">
   <div class="card-title">Logging Control</div>
   <div class="state-banner off" id="state-banner">● Logging is OFF</div>
@@ -162,66 +112,41 @@
     <button class="btn btn-green"  id="btn-start" onclick="sendCmd('START')" disabled>▶ Start Logging</button>
     <button class="btn btn-orange" id="btn-pause" onclick="sendCmd('PAUSE')" disabled>⏸ Pause Logging</button>
   </div>
-  <button class="btn btn-red" id="btn-stop" onclick="sendCmd('STOP')" disabled style="margin-top:8px">
-    ⏹ Stop Logging
-  </button>
+  <button class="btn btn-red" id="btn-stop" onclick="sendCmd('STOP')" disabled style="margin-top:8px">⏹ Stop Logging</button>
 </div>
 
-<!-- ── File Info ───────────────────────────── -->
 <div class="card">
   <div class="card-title">data.bin on SD Card</div>
-  <div class="info-row"><span class="info-key">File size</span>         <span class="info-val" id="info-size">—</span></div>
-  <div class="info-row"><span class="info-key">Rows logged</span>       <span class="info-val" id="info-rows">—</span></div>
-  <div class="info-row"><span class="info-key">Est. transfer time</span><span class="info-val" id="info-eta">—</span></div>
+  <div class="info-row"><span class="info-key">File size</span>          <span class="info-val" id="info-size">—</span></div>
+  <div class="info-row"><span class="info-key">Rows logged</span>        <span class="info-val" id="info-rows">—</span></div>
+  <div class="info-row"><span class="info-key">Est. transfer time</span> <span class="info-val" id="info-eta">—</span></div>
 </div>
 
-<!-- ── Transfer & Export ──────────────────── -->
 <div class="card">
   <div class="card-title">Transfer &amp; Export</div>
-
-  <div class="warn-box" id="warn-transfer">
-    ⚡ Transferring at full speed — all sensors suspended on ESP32.
-  </div>
-
-  <div class="progress-wrap" id="prog-wrap" style="display:none">
-    <div class="progress-bar" id="prog-bar"></div>
-  </div>
+  <div class="warn-box" id="warn-transfer">⚡ Transferring at full speed — all sensors suspended on ESP32.</div>
+  <div class="progress-wrap" id="prog-wrap" style="display:none"><div class="progress-bar" id="prog-bar"></div></div>
   <div class="progress-stats" id="prog-stats" style="display:none">
     <div class="pstat"><div class="pstat-label">Received</div><div class="pstat-val" id="ps-recv">—</div></div>
     <div class="pstat"><div class="pstat-label">Records</div> <div class="pstat-val" id="ps-rows">—</div></div>
     <div class="pstat"><div class="pstat-label">ETA</div>     <div class="pstat-val" id="ps-eta">—</div></div>
   </div>
-
-  <button class="btn btn-blue"      id="btn-stop-dl"    onclick="stopAndDownload()" disabled style="margin-bottom:8px">
-    ⏹💾 Stop &amp; Download
-  </button>
-  <button class="btn btn-secondary" id="btn-dump"        onclick="requestDump()"    disabled>
-    📥 Download data.bin from SD
-  </button>
-  <button class="btn btn-orange"    id="btn-cancel-dump" onclick="cancelDump()"     style="display:none">
-    ✕ Cancel Download
-  </button>
-  <button class="btn btn-green"     id="btn-save-csv"    onclick="saveCSV()"        disabled>
-    💾 Save as CSV (same format as Python output)
-  </button>
-  <button class="btn btn-orange"    id="btn-save-bin"    onclick="saveBIN()"        disabled>
-    📦 Save raw .bin (for Python script)
-  </button>
-
+  <button class="btn btn-blue"      id="btn-stop-dl"    onclick="stopAndDownload()" disabled style="margin-bottom:8px">⏹💾 Stop &amp; Download</button>
+  <button class="btn btn-secondary" id="btn-dump"        onclick="requestDump()"    disabled>📥 Download data.bin from SD</button>
+  <button class="btn btn-orange"    id="btn-cancel-dump" onclick="cancelDump()"     style="display:none">✕ Cancel Download</button>
+  <button class="btn btn-green"     id="btn-save-csv"    onclick="saveCSV()"        disabled>💾 Save as CSV (same format as Python output)</button>
+  <button class="btn btn-orange"    id="btn-save-bin"    onclick="saveBIN()"        disabled>📦 Save raw .bin (for Python script)</button>
   <hr class="danger-divider">
-  <button class="btn btn-red" id="btn-clear" onclick="clearSD()" disabled>
-    🗑 Wipe data.bin on SD card
-  </button>
+  <button class="btn btn-red" id="btn-clear" onclick="clearSD()" disabled>🗑 Wipe data.bin on SD card</button>
 </div>
 
-<!-- ── Activity Log ───────────────────────── -->
 <div class="card">
   <div class="card-title">Activity Log</div>
   <div id="log"></div>
 </div>
 
 <script>
-const VERSION = 'v1.0.1';
+const VERSION = 'v1.0.2';
 
 const SERVICE_UUID     = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
@@ -230,6 +155,7 @@ const WRITE_CHAR_UUID  = 'beb5483e-36e1-4688-b7f5-ea07361b26a9';
 const RECORD_SIZE = 37;
 const SYNC_BYTE   = 0xAA;
 
+// Field offsets within a record
 const OFF_SYNC      = 0;
 const OFF_HOUR      = 1;
 const OFF_MINUTE    = 2;
@@ -250,12 +176,20 @@ let writeChar   = null;
 let logState    = 'OFF';
 let isConnected = false;
 
+// ===================================================================
+// Dump state
+// ===================================================================
 let inDump          = false;
-let dumpTotalBytes  = 0;
-let dumpRecvBytes   = 0;
-let dumpRecords     = [];   // each entry is a Uint8Array(37) — one record
+let dumpTotalBytes  = 0;  // total file bytes reported by ESP32 (inc. 4-byte header)
+let dumpRecvBytes   = 0;  // raw bytes received so far
+let dumpRecords     = []; // complete parsed records, each a Uint8Array(37)
 let dumpStartTime   = 0;
 let dumpSpeedSmooth = 0;
+
+// Carry-over buffer for bytes that arrived mid-record across packet boundaries.
+// The BLE stack may coalesce multiple records into one notification OR split
+// a record across two notifications. This buffer handles both cases correctly.
+let dumpCarryOver = new Uint8Array(0);
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -326,20 +260,80 @@ function updateAllButtons() {
 }
 
 // ===================================================================
-// Incoming data
+// Incoming data handler
+//
+// KEY FIX (v1.0.2):
+// The previous version only accepted packets of exactly RECORD_SIZE
+// (37) bytes. The BLE stack can coalesce multiple records into one
+// larger notification (e.g. 407 bytes = 11 records). Those were
+// being silently dropped, causing ~10% data loss.
+//
+// The new approach:
+//   1. Prepend any leftover bytes from the previous notification
+//      (dumpCarryOver) to the new packet.
+//   2. Walk through the combined buffer one byte at a time.
+//   3. When SYNC_BYTE is found and >= RECORD_SIZE bytes remain,
+//      extract and store that record.
+//   4. Save any trailing incomplete bytes into dumpCarryOver for
+//      the next notification.
+//
+// This handles every possible packet size correctly.
 // ===================================================================
 function onData(event) {
   const dv    = event.target.value;
-  const bytes = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+  const fresh = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
 
-  // Route: SYNC_BYTE during dump = binary record; everything else = ASCII
-  if (inDump && bytes[0] === SYNC_BYTE) {
-    handleBinaryRecord(bytes);
+  // Route: if not in a dump, or first byte looks like ASCII text,
+  // treat as a control message.
+  // Binary records always start with 0xAA; ASCII messages start with
+  // printable characters (0x23 '#', 'S', etc.) which are never 0xAA.
+  if (!inDump || fresh[0] !== SYNC_BYTE) {
+    // May still be a binary chunk with carry-over; only decode as text
+    // if we have no carry-over (meaning the first byte really is text).
+    if (dumpCarryOver.length === 0) {
+      handleControlMessage(new TextDecoder().decode(dv).trim());
+      return;
+    }
+  }
+
+  if (inDump) {
+    // Combine carry-over + fresh bytes into one contiguous buffer
+    const combined = new Uint8Array(dumpCarryOver.length + fresh.length);
+    combined.set(dumpCarryOver, 0);
+    combined.set(fresh, dumpCarryOver.length);
+    dumpCarryOver = new Uint8Array(0); // clear
+
+    dumpRecvBytes += fresh.length;
+
+    let i = 0;
+    while (i <= combined.length - RECORD_SIZE) {
+      if (combined[i] === SYNC_BYTE) {
+        // Extract this record — copy to independent buffer
+        const rec = new Uint8Array(RECORD_SIZE);
+        rec.set(combined.subarray(i, i + RECORD_SIZE));
+        dumpRecords.push(rec);
+        i += RECORD_SIZE;
+      } else {
+        // Not a sync byte — skip and resync
+        i++;
+      }
+    }
+
+    // Save leftover bytes (< RECORD_SIZE) for next notification
+    if (i < combined.length) {
+      dumpCarryOver = new Uint8Array(combined.subarray(i));
+    }
+
+    updateProgress();
   } else {
+    // Not in dump — decode as text control message
     handleControlMessage(new TextDecoder().decode(dv).trim());
   }
 }
 
+// ===================================================================
+// Control message handler
+// ===================================================================
 function handleControlMessage(text) {
   if (text.startsWith('STATUS,')) {
     const p = text.split(',');
@@ -362,6 +356,7 @@ function handleControlMessage(text) {
     dumpTotalBytes  = m ? parseInt(m[1]) : 0;
     dumpRecvBytes   = 0;
     dumpRecords     = [];
+    dumpCarryOver   = new Uint8Array(0);
     dumpStartTime   = Date.now();
     dumpSpeedSmooth = 0;
     inDump          = true;
@@ -378,7 +373,8 @@ function handleControlMessage(text) {
 
   if (text.startsWith('##ERROR')) {
     log('❌ ' + text.replace(/##/g,''));
-    inDump = false; showProgress(false);
+    inDump = false; dumpCarryOver = new Uint8Array(0);
+    showProgress(false);
     document.getElementById('warn-transfer').style.display = 'none';
     updateAllButtons(); return;
   }
@@ -392,34 +388,30 @@ function handleControlMessage(text) {
   }
 }
 
-// Each notification during a dump is exactly one 37-byte record
-function handleBinaryRecord(bytes) {
-  if (bytes.length === RECORD_SIZE && bytes[OFF_SYNC] === SYNC_BYTE) {
-    // Store an independent copy — bytes.buffer is shared and may be reused
-    const copy = new Uint8Array(RECORD_SIZE);
-    copy.set(bytes.subarray(0, RECORD_SIZE));
-    dumpRecords.push(copy);
-    dumpRecvBytes += RECORD_SIZE;
-  }
-  updateProgress();
-}
-
 function finishDump(cancelled) {
-  inDump = false;
+  // Flush any carry-over bytes — shouldn't happen on clean finish but be safe
+  dumpCarryOver = new Uint8Array(0);
+  inDump        = false;
+
   const elapsed = ((Date.now() - dumpStartTime) / 1000).toFixed(1);
   const kbps    = ((dumpRecvBytes / 1024) / parseFloat(elapsed)).toFixed(1);
+
   document.getElementById('warn-transfer').style.display  = 'none';
   document.getElementById('btn-cancel-dump').style.display = 'none';
+
   if (cancelled) {
     document.getElementById('prog-bar').classList.add('cancelled');
     log('⚠️ Cancelled — ' + dumpRecords.length.toLocaleString() + ' records received');
   } else {
     document.getElementById('prog-bar').classList.add('done');
     document.getElementById('prog-bar').style.width = '100%';
+    // Show raw byte count alongside record count so mismatches are visible
     log('✅ Transfer complete — ' + dumpRecords.length.toLocaleString() +
-        ' records in ' + elapsed + 's (' + kbps + ' KB/s)');
+        ' records | ' + fmtBytes(dumpRecvBytes) + ' raw | ' +
+        elapsed + 's @ ' + kbps + ' KB/s');
     if (isIOS) log('📱 Tap Save as CSV or Save raw .bin to open Share Sheet');
   }
+
   if (dumpRecords.length > 0) {
     document.getElementById('btn-save-csv').disabled = false;
     document.getElementById('btn-save-bin').disabled = false;
@@ -462,9 +454,6 @@ function parseBinaryToRows() {
 
 function pad2(n) { return String(n).padStart(2,'0'); }
 
-// ===================================================================
-// Logging banner
-// ===================================================================
 function updateLogBanner() {
   const banner = document.getElementById('state-banner');
   if (logState === 'LOGGING') {
@@ -484,7 +473,7 @@ function updateLogBanner() {
 // ===================================================================
 function saveCSV() {
   if (!dumpRecords.length) { log('No data to save.'); return; }
-  log('Parsing binary data…');
+  log('Parsing ' + dumpRecords.length.toLocaleString() + ' records…');
   const rows = parseBinaryToRows();
   if (!rows.length) { log('❌ No valid records found'); return; }
   const csv  = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n' +
@@ -575,25 +564,23 @@ async function clearSD() {
 }
 
 // ===================================================================
-// Progress & file info UI
+// Progress & file info
 // ===================================================================
 function showProgress(show) {
   document.getElementById('prog-wrap').style.display  = show ? 'block' : 'none';
   document.getElementById('prog-stats').style.display = show ? 'grid'  : 'none';
-  if (!show) {
-    const bar = document.getElementById('prog-bar');
-    bar.style.width = '0%'; bar.classList.remove('done','cancelled');
-  }
+  if (!show) { const bar = document.getElementById('prog-bar'); bar.style.width='0%'; bar.classList.remove('done','cancelled'); }
 }
 
 function updateProgress() {
-  const pct     = dumpTotalBytes > 0 ? (dumpRecvBytes / dumpTotalBytes * 100) : 0;
+  // Use raw byte count for progress bar (most accurate reflection of what's arrived)
+  const pct     = dumpTotalBytes > 0 ? (dumpRecvBytes / (dumpTotalBytes - 4) * 100) : 0;
   const elapsed = (Date.now() - dumpStartTime) / 1000;
   const kbps    = elapsed > 0 ? (dumpRecvBytes / 1024 / elapsed) : 0;
   dumpSpeedSmooth = dumpSpeedSmooth * 0.85 + kbps * 0.15;
-  const rem = dumpSpeedSmooth > 0 ? ((dumpTotalBytes - dumpRecvBytes) / 1024 / dumpSpeedSmooth) : 0;
+  const rem = dumpSpeedSmooth > 0 ? ((dumpTotalBytes - 4 - dumpRecvBytes) / 1024 / dumpSpeedSmooth) : 0;
   document.getElementById('prog-bar').style.width = Math.min(pct, 99) + '%';
-  document.getElementById('ps-recv').textContent  = fmtBytes(dumpRecvBytes) + ' / ' + fmtBytes(dumpTotalBytes);
+  document.getElementById('ps-recv').textContent  = fmtBytes(dumpRecvBytes) + ' / ' + fmtBytes(dumpTotalBytes - 4);
   document.getElementById('ps-rows').textContent  = dumpRecords.length.toLocaleString();
   document.getElementById('ps-eta').textContent   = rem > 0 ? fmtTime(rem) : '…';
 }
@@ -601,8 +588,10 @@ function updateProgress() {
 function updateFileInfo(bytes, rows) {
   document.getElementById('info-size').textContent = bytes > 0 ? fmtBytes(bytes) : '—';
   document.getElementById('info-rows').textContent = rows  > 0 ? rows.toLocaleString() : '—';
-  const etaSec = bytes > 0 ? (bytes - 4) / RECORD_SIZE * 0.002 : 0;
-  document.getElementById('info-eta').textContent  = etaSec > 0 ? '~' + fmtTime(etaSec) : '—';
+  // ETA: number of data bytes / 37 bytes per record × 2ms per record
+  const dataBytes = bytes > 4 ? bytes - 4 : 0;
+  const etaSec    = dataBytes > 0 ? Math.ceil(dataBytes / RECORD_SIZE) * 0.002 : 0;
+  document.getElementById('info-eta').textContent = etaSec > 0 ? '~' + fmtTime(etaSec) : '—';
 }
 
 // ===================================================================
