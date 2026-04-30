@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ESP32 Sensor Logger</title>
+<!-- SheetJS for XLSX export — CDN, ~600KB minified -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --bg:       #0f1117;
@@ -81,15 +83,44 @@
 
   .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .danger-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0 10px; }
+
+  /* QR code card — sits in its own card so it's easy to spot */
+  .qr-card { display: flex; align-items: center; gap: 14px; }
+  .qr-img {
+    width: 110px; height: 110px;
+    background: white; border-radius: 8px; padding: 6px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px var(--border);
+  }
+  .qr-img img { width: 100%; height: 100%; display: block; }
+  .qr-text { flex: 1; min-width: 0; }
+  .qr-text .qr-headline { font-size: 0.92rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .qr-text .qr-sub { font-size: 0.75rem; color: var(--muted); line-height: 1.45; }
+  .qr-text .qr-url { font-family: var(--mono); font-size: 0.72rem; color: var(--accent); word-break: break-all; margin-top: 4px; }
 </style>
 </head>
 <body>
 
 <div class="title-row">
   <h1>ESP32 <span>Sensor Logger</span></h1>
-  <span class="version">v1.1.1</span>
+  <span class="version">v1.2.0</span>
 </div>
 <p class="sub">Edge / Chrome on Windows·Mac·Android &nbsp;·&nbsp; Bluefy on iPhone</p>
+
+<!-- ============================================================
+     QR Code Card — scan to open this site on a phone
+     ============================================================ -->
+<div class="card qr-card">
+  <div class="qr-img">
+    <img alt="QR code to https://conoregan1.github.io/"
+         src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyCAIAAABnRsZeAAAHu0lEQVR4nO3cQY4kNRRFUQr1AhAj9r86RogdBAtACqH2/djOOmfaqszIquwrD5789TzPLwCdX3c/APBpZAWIyQoQkxUgJitATFaAmKwAMVkBYrICxGQFiMkKEJMVICYrQExWgJisADFZAWKyAsRkBYjJChD7sfLDv/3+R/Uch/j7rz9f/nXu876/74r3Zz7z8668742vfKaV76TTChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQW1rZvptbjq64cSm7y8qudO5n3924Kt5l7vM6rQAxWQFisgLEZAWIyQoQkxUgJitATFaAmKwAscGV7TuLxv9u5ROdeQPr3I527mfnfN7/BacVICYrQExWgJisADFZAWKyAsRkBYjJChCTFSC2bWV7o7nF6pnL4BW7lqNn7mi/G6cVICYrQExWgJisADFZAWKyAsRkBYjJChCTFSBmZXuE923ojbvSudtqV35X/D+cVoCYrAAxWQFisgLEZAWIyQoQkxUgJitATFaA2LaV7Y1ryLl954270rlnXlkV77pD98xX3sVpBYjJChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIDa5sz7xjdZddt9XOva9n/u++2/8FpxUgJitATFaAmKwAMVkBYrICxGQFiMkKEJMVIPb1PM/uZ7jGylZy7qbbueXomXes3nhb7XfjtALEZAWIyQoQkxUgJitATFaAmKwAMVkBYrICxAbvsn23ayu5slhded93Z978euPf6Mb7aHd9c96tPJXTChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQG1zZzu3/Vt73xh3tnBsXq2ducN/tuiV312/DaQWIyQoQkxUgJitATFaAmKwAMVkBYrICxGQFiH09z/PTP3zmXaef977vblyOzi1lP+83eea37p3TChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQW1rZrrhxO3imXXe77vo9zz3zjd/JM5/ZaQWIyQoQkxUgJitATFaAmKwAMVkBYrICxGQFiP1Y+eEz75T9vOXo3FPNrU4/7xPNve/Kb+PMTbnTChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQ23aX7Y1uvEX13ZlP9W7X7bxn3hq7Ym7767QCxGQFiMkKEJMVICYrQExWgJisADFZAWKyAsSW7rKds7L/O3MNuesT7bpjddddtu/mbo098xv7bu6v4LQCxGQFiMkKEJMVICYrQExWgJisADFZAWKyAsS2rWznVphz28G5NeSNG81dC91dztwNn8lpBYjJChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIfT3PM/TSZ97QeeY29Mz3PXPtumvPeuZtxO92va/TChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQG1zZrphbNO5aQ954W+2cM/8Kc8686XZuce60AsRkBYjJChCTFSAmK0BMVoCYrAAxWQFisgLEPnBlu/LK787cSr6b25WeuZSd+xud+YnO/D47rQAxWQFisgLEZAWIyQoQkxUgJitATFaAmKwAscGV7a5954rvdmvsijOX0HN2bX/PXPe+c1oBYrICxGQFiMkKEJMVICYrQExWgJisADFZAWI/dr3xyv5v1wrzxp3l3Cvvutn3xr/CjTcKr3BaAWKyAsRkBYjJChCTFSAmK0BMVoCYrAAxWQFiSyvbud3h3Bpybht65jOfuTpdcePvasWZN/u+c1oBYrICxGQFiMkKEJMVICYrQExWgJisADFZAWJfz/P89A+vrBI/72ffzW00d92TOufMteuKz/sbvXNaAWKyAsRkBYjJChCTFSAmK0BMVoCYrAAxWQFih65s55y5wV3xeVvYXWvmXeveXRvcuc/rtALEZAWIyQoQkxUgJitATFaAmKwAMVkBYrICxH7sfoCfsbId3HUP7rszX/nM39WZq+I5u/bKK5xWgJisADFZAWKyAsRkBYjJChCTFSAmK0BMVoDY0l22382Zi9U5Nz7Vihvvsj1z2+20AsRkBYjJChCTFSAmK0BMVoCYrAAxWQFisgLElu6y3bWznPO+LLzx5tdd697vduPsmXf37toNO60AMVkBYrICxGQFiMkKEJMVICYrQExWgJisALGlu2x3bfhWnPnMZ95muut9P+/W2HdnrtXdZQscRFaAmKwAMVkBYrICxGQFiMkKEJMVICYrQGzpLtsVc8vCXWvIG2+rXbHyvnN36L5bed9dW9hdK+oVTitATFaAmKwAMVkBYrICxGQFiMkKEJMVICYrQGzbyva7ufGW3Ln3XdngnmluCzu3op77PTutADFZAWKyAsRkBYjJChCTFSAmK0BMVoCYrAAxK9vMmbfznrnuPfP+3blX3nWz766/vtMKEJMVICYrQExWgJisADFZAWKyAsRkBYjJChD7ep7np39411Zyxdwzr7zyriXlme975jdnxZnfujlOK0BMVoCYrAAxWQFisgLEZAWIyQoQkxUgJitAbPAu27l7Qz/P3AZ3l5VnPvPzrvyN5tauZz6V0woQkxUgJitATFaAmKwAMVkBYrICxGQFiMkKEFu6yxbg35xWgJisADFZAWKyAsRkBYjJChCTFSAmK0BMVoCYrAAxWQFisgLEZAWIyQoQkxUgJitATFaAmKwAMVkBYv8ALgXYpwx8IZ0AAAAASUVORK5CYII=">
+  </div>
+  <div class="qr-text">
+    <div class="qr-headline">📱 Scan to open on your phone</div>
+    <div class="qr-sub">Point your camera at the QR code to load this logger in your phone's browser. Use Chrome on Android or Bluefy on iPhone for Bluetooth support.</div>
+    <div class="qr-url">https://conoregan1.github.io/</div>
+  </div>
+</div>
 
 <div class="card">
   <div class="card-title">System Status</div>
@@ -134,7 +165,7 @@
   <button class="btn btn-blue"      id="btn-stop-dl"    onclick="stopAndDownload()" disabled style="margin-bottom:8px">⏹💾 Stop &amp; Download</button>
   <button class="btn btn-secondary" id="btn-dump"        onclick="requestDump()"    disabled>📥 Download data.bin from SD</button>
   <button class="btn btn-orange"    id="btn-cancel-dump" onclick="cancelDump()"     style="display:none">✕ Cancel Download</button>
-  <button class="btn btn-green"     id="btn-save-csv"    onclick="saveCSV()"        disabled>💾 Save as CSV (same format as Python output)</button>
+  <button class="btn btn-green"     id="btn-save-xlsx"   onclick="saveXLSX()"       disabled>💾 Save as XLSX (same format as Python output)</button>
   <button class="btn btn-orange"    id="btn-save-bin"    onclick="saveBIN()"        disabled>📦 Save raw .bin (for Python script)</button>
   <hr class="danger-divider">
   <button class="btn btn-red" id="btn-clear" onclick="clearSD()" disabled>🗑 Wipe data.bin on SD card</button>
@@ -146,7 +177,7 @@
 </div>
 
 <script>
-const VERSION = 'v1.1.1';
+const VERSION = 'v1.2.0';
 
 const SERVICE_UUID     = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const NOTIFY_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
@@ -189,6 +220,18 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 // ===================================================================
+// Filename helper — date AND time so multiple downloads on the same
+// day never overwrite each other. Format: YYYY-MM-DD_HH-MM-SS
+// ===================================================================
+function timestampedFilename(suffix) {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+                '_' + pad(d.getHours()) + '-' + pad(d.getMinutes()) + '-' + pad(d.getSeconds());
+  return stamp + suffix;
+}
+
+// ===================================================================
 // BLE Connection
 // ===================================================================
 async function connectBLE() {
@@ -222,7 +265,6 @@ async function connectBLE() {
   } catch (e) {
     log('❌ ' + e.message);
     setDot('ble', 'red', 'Failed');
-    // Make sure connect button stays usable after a failed attempt
     document.getElementById('btn-connect').disabled = false;
   }
 }
@@ -231,29 +273,18 @@ function disconnectBLE() {
   if (device && device.gatt.connected) device.gatt.disconnect();
 }
 
-// ===================================================================
-// Disconnection handler
-//
-// FIX: Previously a cancelled dump left inDump=true or buttons in
-// a bad state. Now onDisconnected always does a full clean reset
-// regardless of what state the app was in, so reconnecting via
-// the Connect button always works cleanly.
-// ===================================================================
 function onDisconnected() {
   log('⚠️ Disconnected — tap Connect to reconnect.');
 
-  // Stop any pending end-wait timer
   if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
 
-  // If we were mid-dump, finish it as cancelled so any received
-  // records are still available to save
   if (inDump) {
     inDump        = false;
     dumpCarryOver = new Uint8Array(0);
     document.getElementById('warn-transfer').style.display = 'none';
     if (dumpRecords.length > 0) {
-      document.getElementById('btn-save-csv').disabled = false;
-      document.getElementById('btn-save-bin').disabled = false;
+      document.getElementById('btn-save-xlsx').disabled = false;
+      document.getElementById('btn-save-bin').disabled  = false;
       log('💾 ' + dumpRecords.length.toLocaleString() + ' records received before disconnect — you can still save them');
     }
     const bar = document.getElementById('prog-bar');
@@ -261,30 +292,21 @@ function onDisconnected() {
     bar.classList.add('cancelled');
   }
 
-  // Full connection state reset
   isConnected = false;
   setDot('ble', 'red', 'Off');
   setDot('log', '', '—');
   setDot('gps', '', '—');
   setDot('sd',  '', '—');
 
-  // Reset all button states cleanly
-  document.getElementById('btn-connect').disabled    = false;  // ← always re-enable
+  document.getElementById('btn-connect').disabled    = false;
   document.getElementById('btn-disconnect').disabled = true;
-  document.getElementById('btn-cancel-dump').style.display  = 'none';
-  document.getElementById('btn-cancel-dump').disabled       = false; // ← re-enable for next time
+  document.getElementById('btn-cancel-dump').style.display = 'none';
+  document.getElementById('btn-cancel-dump').disabled      = false;
 
-  // Keep logState as-is — the ESP32 continues logging even while
-  // disconnected, so when we reconnect the STATUS packet will update it
   updateAllButtons();
   updateLogBanner();
 }
 
-// ===================================================================
-// Single master button update function
-// Never touches btn-cancel-dump visibility or btn-connect disabled
-// state — those are managed separately to avoid conflicts.
-// ===================================================================
 function updateAllButtons() {
   const c = isConnected;
   const d = inDump;
@@ -294,13 +316,9 @@ function updateAllButtons() {
   document.getElementById('btn-stop-dl').disabled = !c || d;
   document.getElementById('btn-dump').disabled    = !c || d;
   document.getElementById('btn-clear').disabled   = !c || d;
-  // Cancel button: visible only when connected AND mid-dump
   document.getElementById('btn-cancel-dump').style.display = (c && d) ? 'flex' : 'none';
 }
 
-// ===================================================================
-// Incoming data — carry-over buffer handles any packet size
-// ===================================================================
 function onData(event) {
   const dv    = event.target.value;
   const fresh = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
@@ -340,9 +358,6 @@ function onData(event) {
   }
 }
 
-// ===================================================================
-// Control message handler
-// ===================================================================
 function handleControlMessage(text) {
   if (text.startsWith('STATUS,')) {
     const p = text.split(',');
@@ -423,16 +438,12 @@ function handleControlMessage(text) {
   if (text === '##CLEARED##') {
     log('🗑 data.bin wiped on SD card.');
     updateFileInfo(0, 0); dumpRecords = [];
-    document.getElementById('btn-save-csv').disabled = true;
-    document.getElementById('btn-save-bin').disabled = true;
+    document.getElementById('btn-save-xlsx').disabled = true;
+    document.getElementById('btn-save-bin').disabled  = true;
     return;
   }
 }
 
-// ===================================================================
-// finishDump — FIX: always re-enables cancel button so it works
-// next time, and always calls updateAllButtons() to restore UI.
-// ===================================================================
 function finishDump(cancelled) {
   if (endWaitTimer) { clearInterval(endWaitTimer); endWaitTimer = null; }
   dumpCarryOver = new Uint8Array(0);
@@ -442,7 +453,6 @@ function finishDump(cancelled) {
   const kbps    = ((dumpRecvBytes / 1024) / parseFloat(elapsed)).toFixed(1);
 
   document.getElementById('warn-transfer').style.display   = 'none';
-  // Hide cancel button AND re-enable it so it works next time
   document.getElementById('btn-cancel-dump').style.display = 'none';
   document.getElementById('btn-cancel-dump').disabled      = false;
 
@@ -455,22 +465,18 @@ function finishDump(cancelled) {
     log('✅ Transfer complete — ' + dumpRecords.length.toLocaleString() +
         ' records | ' + fmtBytes(dumpRecvBytes) + ' raw | ' +
         elapsed + 's @ ' + kbps + ' KB/s');
-    if (isIOS) log('📱 Tap Save as CSV or Save raw .bin to open Share Sheet');
+    if (isIOS) log('📱 Tap Save as XLSX or Save raw .bin to open Share Sheet');
   }
 
   if (dumpRecords.length > 0) {
-    document.getElementById('btn-save-csv').disabled = false;
-    document.getElementById('btn-save-bin').disabled = false;
+    document.getElementById('btn-save-xlsx').disabled = false;
+    document.getElementById('btn-save-bin').disabled  = false;
   }
 
-  // Restore all other buttons based on current connection state
   updateAllButtons();
   updateFileInfo(dumpRecvBytes, dumpRecords.length);
 }
 
-// ===================================================================
-// Binary parser — v1.1.x: uint32 time_ms at offset 1
-// ===================================================================
 function msToTimestamp(ms) {
   ms = ms >>> 0;
   const h = Math.floor(ms / 3600000); ms %= 3600000;
@@ -495,13 +501,17 @@ function parseBinaryToRows() {
     const roll     = view.getFloat32(OFF_ROLL,    true);
     const pitch    = view.getFloat32(OFF_PITCH,   true);
     const yaw      = view.getFloat32(OFF_YAW,     true);
-    rows.push([
-      msToTimestamp(time_ms),
-      gpsValid ? (lat_e6/1e6).toFixed(6) : '',
-      gpsValid ? (lon_e6/1e6).toFixed(6) : '',
-      accelX.toFixed(4), accelY.toFixed(4), accelZ.toFixed(4),
-      roll.toFixed(2), pitch.toFixed(2), yaw.toFixed(2)
-    ]);
+    rows.push({
+      time:    msToTimestamp(time_ms),
+      lat:     gpsValid ? +(lat_e6/1e6).toFixed(6) : null,
+      lon:     gpsValid ? +(lon_e6/1e6).toFixed(6) : null,
+      accelX:  +accelX.toFixed(4),
+      accelY:  +accelY.toFixed(4),
+      accelZ:  +accelZ.toFixed(4),
+      roll:    +roll.toFixed(2),
+      pitch:   +pitch.toFixed(2),
+      yaw:     +yaw.toFixed(2)
+    });
   }
   return rows;
 }
@@ -523,18 +533,59 @@ function updateLogBanner() {
 }
 
 // ===================================================================
-// Exports
+// XLSX export — uses SheetJS to build a real .xlsx file matching
+// the Python script output exactly (same columns, Time as text).
 // ===================================================================
-function saveCSV() {
+function saveXLSX() {
   if (!dumpRecords.length) { log('No data to save.'); return; }
+  if (typeof XLSX === 'undefined') {
+    log('❌ SheetJS library failed to load. Check your internet connection.');
+    return;
+  }
   log('Parsing ' + dumpRecords.length.toLocaleString() + ' records…');
   const rows = parseBinaryToRows();
   if (!rows.length) { log('❌ No valid records found'); return; }
-  const csv  = 'Time,Lat,Long,x-axis,y-axis,z-axis,Roll,Pitch,Yaw\n' +
-               rows.map(r => r.join(',')).join('\n');
-  const date = new Date().toISOString().slice(0,10);
-  download(csv, date+'.csv', 'text/csv');
-  log('💾 '+rows.length.toLocaleString()+' rows → '+(isIOS?'Share Sheet opened':date+'.csv'));
+
+  // Build worksheet — header row first, then data rows
+  const headers = ['Time','Lat','Long','x-axis','y-axis','z-axis','Roll','Pitch','Yaw'];
+  const aoa = [headers];
+  for (const r of rows) {
+    aoa.push([r.time, r.lat, r.lon, r.accelX, r.accelY, r.accelZ, r.roll, r.pitch, r.yaw]);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Force the Time column (column A) to be stored as plain text strings
+  // so Excel doesn't auto-convert HH:MM:SS.mmm into a time serial and
+  // lose the milliseconds — same fix the Python script applies.
+  for (let i = 1; i < aoa.length; i++) {
+    const cellRef = XLSX.utils.encode_cell({ r: i, c: 0 });
+    if (ws[cellRef]) {
+      ws[cellRef].t = 's';
+      ws[cellRef].z = '@';
+    }
+  }
+  // Make the Time column a bit wider
+  ws['!cols'] = [{ wch: 16 }, { wch: 10 }, { wch: 10 }, { wch: 9 }, { wch: 9 },
+                 { wch: 9 }, { wch: 8 }, { wch: 8 }, { wch: 8 }];
+
+  // Sheet name = today's date (matches the Python script)
+  const today = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const sheetName = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  // Bold header row — done after appending so the worksheet is in the workbook
+  // SheetJS community build doesn't write styles, so we skip styling and
+  // just keep the column widths. (Styling requires the pro build.)
+
+  const filename = timestampedFilename('.xlsx');
+  const xlsxOut  = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob     = new Blob([xlsxOut], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  download(blob, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  log('💾 ' + rows.length.toLocaleString() + ' rows → ' + (isIOS ? 'Share Sheet opened' : filename));
 }
 
 function saveBIN() {
@@ -545,13 +596,14 @@ function saveBIN() {
   all.set(hdr, 0);
   let pos = 4;
   for (const rec of dumpRecords) { all.set(rec, pos); pos += RECORD_SIZE; }
-  const date = new Date().toISOString().slice(0,10);
-  download(all, date+'_data.bin', 'application/octet-stream');
-  log('📦 '+fmtBytes(totalLen)+' → '+(isIOS?'Share Sheet opened':date+'_data.bin'));
+  const filename = timestampedFilename('_data.bin');
+  download(all, filename, 'application/octet-stream');
+  log('📦 '+fmtBytes(totalLen)+' → '+(isIOS ? 'Share Sheet opened' : filename));
 }
 
 function download(content, filename, mime) {
-  const blob = new Blob([content], { type: mime });
+  // Accept either a Blob or a Uint8Array/string
+  const blob = (content instanceof Blob) ? content : new Blob([content], { type: mime });
   const url  = URL.createObjectURL(blob);
   if (isIOS) {
     if (navigator.canShare && navigator.canShare({ files:[new File([blob],filename,{type:mime})] })) {
@@ -570,9 +622,6 @@ function download(content, filename, mime) {
   }
 }
 
-// ===================================================================
-// ESP32 commands
-// ===================================================================
 async function sendCmd(cmd) {
   if (!writeChar) return;
   try {
@@ -593,9 +642,6 @@ async function requestDump() {
   } catch(e) { log('❌ '+e.message); updateAllButtons(); }
 }
 
-// FIX: cancelDump no longer sets disabled=true permanently.
-// It sends the command and greys out the button temporarily,
-// but finishDump() always re-enables it when the cancel completes.
 async function cancelDump() {
   if (!writeChar) return;
   try {
@@ -604,7 +650,6 @@ async function cancelDump() {
     log('📤 Cancel sent — waiting for ESP32 to confirm…');
   } catch(e) {
     log('❌ '+e.message);
-    // Re-enable immediately if the write itself failed
     document.getElementById('btn-cancel-dump').disabled = false;
   }
 }
@@ -624,9 +669,6 @@ async function clearSD() {
   catch(e) { log('❌ '+e.message); }
 }
 
-// ===================================================================
-// Progress & file info
-// ===================================================================
 function showProgress(show) {
   document.getElementById('prog-wrap').style.display  = show ? 'block' : 'none';
   document.getElementById('prog-stats').style.display = show ? 'grid'  : 'none';
@@ -654,9 +696,6 @@ function updateFileInfo(bytes, rows) {
   document.getElementById('info-eta').textContent = etaSec > 0 ? '~' + fmtTime(etaSec) : '—';
 }
 
-// ===================================================================
-// UI helpers
-// ===================================================================
 function setDot(id, colour, text) {
   document.getElementById('dot-'+id).className  = 'status-dot'+(colour?' '+colour:'');
   document.getElementById('val-'+id).textContent = text;
